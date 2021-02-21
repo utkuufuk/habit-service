@@ -20,8 +20,8 @@ const (
 )
 
 type Client struct {
-	spreadsheetId   string
-	service         *sheets.SpreadsheetsValuesService
+	spreadsheetId string
+	service       *sheets.SpreadsheetsValuesService
 }
 
 type habit struct {

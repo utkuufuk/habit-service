@@ -8,7 +8,7 @@ import (
 )
 
 type Habit struct {
-	SpreadsheetId   string `yaml:"spreadsheet_id"`
+	SpreadsheetId string `yaml:"spreadsheet_id"`
 }
 
 type Telegram struct {
