@@ -7,5 +7,5 @@ telegram:
   token: xxxxxxxxxx:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   chat_id: xxxxxxxxxx
 
-habits:
+habit:
   spreadsheet_id: xxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxx
