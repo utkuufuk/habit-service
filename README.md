@@ -17,12 +17,12 @@ The Docker image is updated whenever a new commit is pushed to the `master` bran
 
 4. Run the image
     ```sh
-    docker run -d
-        -v ~/.config/habit-service/config.yml:/src/config.yml
-        -v ~/.config/habit-service/token.json:/src/token.json
-        -v ~/.config/habit-service/credentials.json:/src/credentials.json
+    docker run -d \
+        -v ~/.config/habit-service/config.yml:/src/config.yml \
+        -v ~/.config/habit-service/token.json:/src/token.json \
+        -v ~/.config/habit-service/credentials.json:/src/credentials.json \
         -p <PORT>:<PORT> \
         --restart unless-stopped \
         --name habit_service \
-        utkuufuk/habit-service:latest
+        docker.pkg.github.com/utkuufuk/habit-service/habit-service-image:latest
     ```
