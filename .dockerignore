@@ -1,0 +1,10 @@
+.editorconfig
+.gitignore
+Dockerfile
+*.yml
+*.json
+*.md
+*.rest
+/.git/
+/.github/
+/.vscode/

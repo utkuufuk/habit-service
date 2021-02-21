@@ -1,0 +1,11 @@
+http_port: 8091
+
+timezone_location: Europe/Istanbul
+
+telegram:
+  enabled: true
+  token: xxxxxxxxxx:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  chat_id: xxxxxxxxxx
+
+habits:
+  spreadsheet_id: xxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxx
