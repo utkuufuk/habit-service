@@ -40,11 +40,7 @@ func GetClient(spreadsheetId string) Client {
 	return Client{spreadsheetId, nil}
 }
 
-func (c Client) FetchNewCards(
-	ctx context.Context,
-	now time.Time,
-	label string,
-) ([]trello.Card, error) {
+func (c Client) FetchNewCards(ctx context.Context, now time.Time) ([]trello.Card, error) {
 	if err := c.initializeService(ctx); err != nil {
 		return nil, fmt.Errorf("could not initialize google spreadsheet service: %w", err)
 	}
@@ -58,7 +54,7 @@ func (c Client) FetchNewCards(
 		return nil, err
 	}
 
-	return toCards(habits, label, now)
+	return toCards(habits, now)
 }
 
 func (c Client) updateScores(habits map[string]habit, now time.Time) error {
@@ -125,11 +121,7 @@ func (c Client) writeCells(values [][]interface{}, rangeName string) error {
 }
 
 // toCards returns a slice of trello cards from the given habits which haven't been marked today
-func toCards(
-	habits map[string]habit,
-	label string,
-	now time.Time,
-) (cards []trello.Card, err error) {
+func toCards(habits map[string]habit, now time.Time) (cards []trello.Card, err error) {
 	for name, habit := range habits {
 		if habit.State != "" {
 			continue
@@ -145,7 +137,7 @@ func toCards(
 		}
 
 		due := time.Date(now.Year(), now.Month(), now.Day(), dueHour, 0, 0, 0, now.Location())
-		c, err := trello.NewCard(title, label, description, &due)
+		c, err := trello.NewCard(title, description, &due)
 		if err != nil {
 			return nil, fmt.Errorf("could not create habit card: %w", err)
 		}

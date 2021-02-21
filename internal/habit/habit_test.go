@@ -9,26 +9,16 @@ import (
 )
 
 func TestToCards(t *testing.T) {
-	str := "test"
 	cellName := "Jun 2020!C3"
 
 	tt := []struct {
 		name     string
-		label    string
 		habits   map[string]habit
 		numCards int
 		err      error
 	}{
 		{
-			name:     "missing label",
-			label:    "",
-			habits:   map[string]habit{str: {cellName, "", "–", 0}},
-			numCards: 0,
-			err:      errors.New(""),
-		},
-		{
-			name:  "marked habits",
-			label: str,
+			name: "marked habits",
 			habits: map[string]habit{
 				"a": {cellName, "✔", "–", 0},
 				"b": {cellName, "x", "–", 0},
@@ -40,8 +30,7 @@ func TestToCards(t *testing.T) {
 			err:      nil,
 		},
 		{
-			name:  "some marked some unmarked habits",
-			label: str,
+			name: "some marked some unmarked habits",
 			habits: map[string]habit{
 				"a": {cellName, "✔", "–", 0},
 				"b": {cellName, "x", "–", 0},
@@ -58,7 +47,7 @@ func TestToCards(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			cards, err := toCards(tc.habits, tc.label, time.Now())
+			cards, err := toCards(tc.habits, time.Now())
 			if same := (err == nil && tc.err == nil) || tc.err != nil && err != nil; !same {
 				t.Fatalf("want '%v', got '%v'", tc.err, err)
 			}

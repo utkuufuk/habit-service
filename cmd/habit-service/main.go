@@ -18,15 +18,7 @@ var (
 )
 
 func getDueTasks(w http.ResponseWriter, req *http.Request) {
-	var params struct {
-		Label string `json:"label"`
-	}
-
-	if err := json.NewDecoder(req.Body).Decode(&params); err != nil {
-		fmt.Printf("could not decode label: %v", err)
-	}
-
-	cards, err := client.FetchNewCards(req.Context(), time.Now().In(loc), params.Label)
+	cards, err := client.FetchNewCards(req.Context(), time.Now().In(loc))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "could not fetch new cards: %v", err)
