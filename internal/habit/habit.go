@@ -17,6 +17,10 @@ const (
 	dataRowOffset    = 3 // number of rows before the first data row starts in the spreadsheet
 	dataColumnOffset = 1 // number of columns before the first data column starts in the spreadsheet
 	dueHour          = 23
+
+	symbolDone    = "✔"
+	symbolFailed  = "✘"
+	symbolSkipped = "–"
 )
 
 type Client struct {
@@ -68,6 +72,10 @@ func (c Client) MarkHabit(cellName string, symbol string) error {
 	values[0] = make([]interface{}, 1)
 	values[0][0] = symbol
 	return c.writeCells(values, cellName)
+}
+
+func IsValidMarkSymbol(symbol string) bool {
+	return symbol == symbolDone || symbol == symbolFailed || symbol == symbolSkipped
 }
 
 // @todo: make this public and call it periodically instead of within FetchNewCards
@@ -196,11 +204,11 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 			}
 
 			val := rows[row][col]
-			if val == "✔" {
+			if val == symbolDone {
 				nom++
 			}
 
-			if val == "–" {
+			if val == symbolSkipped {
 				denom--
 			}
 		}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -86,10 +87,15 @@ func handleGladosCommand(args []string) {
 		return
 	}
 
-	// @todo: validate cell
 	cell := args[1]
+	matched, err := regexp.MatchString(`[a-zA-Z]{3}\ 202\d\![A-Z][1-9][0-9]?$|^100$`, cell)
+	if err != nil || matched == false {
+		log.Error("Invalid cell '%s' to mark habit in Glados command: %v", cell, err)
+		return
+	}
+
 	symbol := args[2]
-	if symbol != "✔" && symbol != "✘" && symbol != "–" {
+	if !habit.IsValidMarkSymbol(symbol) {
 		log.Error("Invalid symbol '%s' to mark habit in Glados command from args: %v", symbol, args)
 		return
 	}
