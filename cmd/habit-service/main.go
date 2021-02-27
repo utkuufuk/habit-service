@@ -51,7 +51,7 @@ func init() {
 func main() {
 	// start HTTP server
 	http.HandleFunc("/", getDueTasks)
-	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
+	go http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
 
 	// start Glados command handler
 	listener := glados.NewListener(cfg.Glados, log)
@@ -81,10 +81,20 @@ func getDueTasks(w http.ResponseWriter, req *http.Request) {
 
 // @todo: create a command parser if there are more commands to handle in the future
 func handleGladosCommand(args []string) {
-	if len(args) != 2 || args[0] != "mark" {
+	if len(args) != 3 || args[0] != "mark" {
 		log.Error("Could not parse Glados command from args: %v", args)
 		return
 	}
 
-	// @todo: mark habit
+	// @todo: validate cell
+	cell := args[1]
+	symbol := args[2]
+	if symbol != "✔" && symbol != "✘" && symbol != "–" {
+		log.Error("Invalid symbol '%s' to mark habit in Glados command from args: %v", symbol, args)
+		return
+	}
+
+	if err := client.MarkHabit(cell, symbol); err != nil {
+		log.Error("Could not mark Habit on cell '%s' with symbol '%s': %v", cell, symbol, err)
+	}
 }

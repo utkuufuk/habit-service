@@ -63,6 +63,13 @@ func (c Client) FetchNewCards() ([]trello.Card, error) {
 	return toCards(habits, now)
 }
 
+func (c Client) MarkHabit(cellName string, symbol string) error {
+	values := make([][]interface{}, 1)
+	values[0] = make([]interface{}, 1)
+	values[0][0] = symbol
+	return c.writeCells(values, cellName)
+}
+
 // @todo: make this public and call it periodically instead of within FetchNewCards
 func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 	scores := make([]float64, len(habits))
