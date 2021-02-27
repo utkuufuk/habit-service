@@ -1,27 +1,78 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"regexp"
+	"syscall"
 	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
+	"github.com/utkuufuk/habit-service/internal/glados"
 	"github.com/utkuufuk/habit-service/internal/habit"
+	"github.com/utkuufuk/habit-service/internal/syslog"
 )
 
 var (
 	cfg    config.Config
 	client habit.Client
-	loc    *time.Location
+	log    syslog.Logger
 )
 
+func init() {
+	var err error
+	cfg, err = config.ReadConfig("config.yml")
+	if err != nil {
+		fmt.Printf("Could not read config variables: %v", err)
+		os.Exit(1)
+	}
+
+	log = syslog.NewLogger(cfg.Telegram.ChatId, cfg.Telegram.Token)
+
+	location, err := time.LoadLocation(cfg.TimezoneLocation)
+	if err != nil {
+		log.Warn(
+			"Warning: invalid timezone location: '%s', falling back to UTC: %v",
+			cfg.TimezoneLocation,
+			err,
+		)
+		location, _ = time.LoadLocation("UTC")
+	}
+
+	client, err = habit.GetClient(context.Background(), cfg.Habit.SpreadsheetId, location)
+	if err != nil {
+		log.Fatal("Could not create gsheets client for Habit Service: %v", err)
+	}
+}
+
+func main() {
+	// start HTTP server
+	http.HandleFunc("/", getDueTasks)
+	go http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
+
+	// start Glados command handler
+	listener := glados.NewListener(cfg.Glados, log)
+	go listener.Listen(context.Background(), handleGladosCommand)
+
+	// shutdown gracefully upon termination
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	<-signalChan
+	listener.Close()
+	log.Info("Shutting down Habit Service")
+}
+
 func getDueTasks(w http.ResponseWriter, req *http.Request) {
-	cards, err := client.FetchNewCards(req.Context(), time.Now().In(loc))
+	cards, err := client.FetchNewCards()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "could not fetch new cards: %v", err)
+		message := fmt.Sprintf("could not fetch new cards: %v", err)
+		log.Info(message)
+		fmt.Fprintf(w, message)
 		return
 	}
 
@@ -29,20 +80,27 @@ func getDueTasks(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(cards)
 }
 
-func main() {
-	var err error
-	cfg, err = config.ReadConfig("config.yml")
-	if err != nil {
-		log.Fatalf("Could not read config variables: %v", err)
+// @todo: create a command parser if there are more commands to handle in the future
+func handleGladosCommand(args []string) {
+	if len(args) != 3 || args[0] != "mark" {
+		log.Error("Could not parse Glados command from args: %v", args)
+		return
 	}
 
-	loc, err = time.LoadLocation(cfg.TimezoneLocation)
-	if err != nil {
-		log.Fatalf("invalid timezone location: %v", loc)
+	cell := args[1]
+	matched, err := regexp.MatchString(`[a-zA-Z]{3}\ 202\d\![A-Z][1-9][0-9]?$|^100$`, cell)
+	if err != nil || matched == false {
+		log.Error("Invalid cell '%s' to mark habit in Glados command: %v", cell, err)
+		return
 	}
 
-	client = habit.GetClient(cfg.Habit.SpreadsheetId)
+	symbol := args[2]
+	if !habit.IsValidMarkSymbol(symbol) {
+		log.Error("Invalid symbol '%s' to mark habit in Glados command from args: %v", symbol, args)
+		return
+	}
 
-	http.HandleFunc("/", getDueTasks)
-	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
+	if err := client.MarkHabit(cell, symbol); err != nil {
+		log.Error("Could not mark Habit on cell '%s' with symbol '%s': %v", cell, symbol, err)
+	}
 }

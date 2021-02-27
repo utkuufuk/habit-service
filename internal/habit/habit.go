@@ -17,11 +17,16 @@ const (
 	dataRowOffset    = 3 // number of rows before the first data row starts in the spreadsheet
 	dataColumnOffset = 1 // number of columns before the first data column starts in the spreadsheet
 	dueHour          = 23
+
+	symbolDone    = "✔"
+	symbolFailed  = "✘"
+	symbolSkipped = "–"
 )
 
 type Client struct {
 	spreadsheetId string
 	service       *sheets.SpreadsheetsValuesService
+	location      *time.Location
 }
 
 type habit struct {
@@ -36,15 +41,20 @@ type cell struct {
 	row int
 }
 
-func GetClient(spreadsheetId string) Client {
-	return Client{spreadsheetId, nil}
+func GetClient(
+	ctx context.Context,
+	spreadsheetId string,
+	location *time.Location,
+) (client Client, err error) {
+	service, err := initializeService(ctx)
+	if err != nil {
+		return client, fmt.Errorf("could not initialize gsheets service: %w", err)
+	}
+	return Client{spreadsheetId, service.Spreadsheets.Values, location}, nil
 }
 
-func (c Client) FetchNewCards(ctx context.Context, now time.Time) ([]trello.Card, error) {
-	if err := c.initializeService(ctx); err != nil {
-		return nil, fmt.Errorf("could not initialize google spreadsheet service: %w", err)
-	}
-
+func (c Client) FetchNewCards() ([]trello.Card, error) {
+	now := time.Now().In(c.location)
 	habits, err := c.fetchHabits(now)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch habits: %w", err)
@@ -57,6 +67,18 @@ func (c Client) FetchNewCards(ctx context.Context, now time.Time) ([]trello.Card
 	return toCards(habits, now)
 }
 
+func (c Client) MarkHabit(cellName string, symbol string) error {
+	values := make([][]interface{}, 1)
+	values[0] = make([]interface{}, 1)
+	values[0][0] = symbol
+	return c.writeCells(values, cellName)
+}
+
+func IsValidMarkSymbol(symbol string) bool {
+	return symbol == symbolDone || symbol == symbolFailed || symbol == symbolSkipped
+}
+
+// @todo: make this public and call it periodically instead of within FetchNewCards
 func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 	scores := make([]float64, len(habits))
 	var cellNameComponents []string
@@ -182,11 +204,11 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 			}
 
 			val := rows[row][col]
-			if val == "✔" {
+			if val == symbolDone {
 				nom++
 			}
 
-			if val == "–" {
+			if val == symbolSkipped {
 				denom--
 			}
 		}

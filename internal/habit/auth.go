@@ -16,21 +16,15 @@ const (
 	SCOPE = "https://www.googleapis.com/auth/spreadsheets"
 )
 
-// initializeService creates and sets a spreadsheet service within the source struct
-func (c *Client) initializeService(ctx context.Context) error {
-	cfg, token, err := readCreds("credentials.json", "token.json")
+// initializeService initializes the gsheets service
+func initializeService(ctx context.Context) (service *sheets.Service, err error) {
+	config, token, err := readCreds("credentials.json", "token.json")
 	if err != nil {
-		return fmt.Errorf("failed to get credentials for google spreadsheets: %w", err)
+		return service, fmt.Errorf("failed to get credentials for google spreadsheets: %w", err)
 	}
 
-	client := cfg.Client(ctx, token)
-	service, err := sheets.New(client)
-	if err != nil {
-		return fmt.Errorf("could not create google spreadsheets client: %w", err)
-	}
-
-	c.service = service.Spreadsheets.Values
-	return nil
+	client := config.Client(ctx, token)
+	return sheets.New(client)
 }
 
 // readCreds reads and returns credentials from the configured files
