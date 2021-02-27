@@ -7,17 +7,23 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Glados struct {
+	Broker  string `yaml:"broker"`
+	GroupId string `yaml:"group_id"`
+	Topic   string `yaml:"topic"`
+}
+
 type Habit struct {
 	SpreadsheetId string `yaml:"spreadsheet_id"`
 }
 
 type Telegram struct {
-	Enabled bool   `yaml:"enabled"`
-	Token   string `yaml:"token"`
-	ChatId  int64  `yaml:"chat_id"`
+	Token  string `yaml:"token"`
+	ChatId int64  `yaml:"chat_id"`
 }
 
 type Config struct {
+	Glados           Glados   `yaml:"glados"`
 	Habit            Habit    `yaml:"habit"`
 	HttpPort         int      `yaml:"http_port"`
 	Telegram         Telegram `yaml:"telegram"`

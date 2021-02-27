@@ -1,11 +1,19 @@
+glados:
+  broker: <IP>:<PORT>
+  group_id: <group_id_str>
+  topic: <topic_str>
+
+
 http_port: 8091
+
 
 timezone_location: Europe/Istanbul
 
+
 telegram:
-  enabled: true
-  token: xxxxxxxxxx:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  chat_id: xxxxxxxxxx
+  token: <telegram_token_str>
+  chat_id: <chat_id_num>
+
 
 habit:
   spreadsheet_id: xxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxx
