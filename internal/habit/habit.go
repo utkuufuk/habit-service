@@ -3,6 +3,7 @@ package habit
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ func (c Client) FetchNewCards() ([]trello.Card, error) {
 	}
 
 	if err = c.updateScores(habits, now); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not update habit scores: %w", err)
 	}
 
 	return toCards(habits, now)
@@ -94,7 +95,7 @@ func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 	lastCol := string(rune(int('A') + len(habits)))
 	rangeName, err := getRangeName(now, cell{firstCol, row}, cell{lastCol, row})
 	if err != nil {
-		return fmt.Errorf("could not update habit scores: %w", err)
+		return fmt.Errorf("could not get range name: %w", err)
 	}
 
 	values := make([][]interface{}, 1)
@@ -212,7 +213,11 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 				denom--
 			}
 		}
+		fmt.Println(nom, denom)
 		score := (float64(nom) / float64(denom))
+		if math.IsNaN(score) {
+			score = 0
+		}
 
 		habits[name] = habit{cellName, state, duration, score}
 	}
