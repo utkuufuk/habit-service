@@ -213,7 +213,6 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 				denom--
 			}
 		}
-		fmt.Println(nom, denom)
 		score := (float64(nom) / float64(denom))
 		if math.IsNaN(score) {
 			score = 0
