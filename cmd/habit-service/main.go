@@ -4,15 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"os/signal"
 	"regexp"
-	"syscall"
 	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
-	"github.com/utkuufuk/habit-service/internal/glados"
 	"github.com/utkuufuk/habit-service/internal/habit"
 	"github.com/utkuufuk/habit-service/internal/syslog"
 )
@@ -50,20 +48,9 @@ func init() {
 }
 
 func main() {
-	// start HTTP server
 	http.HandleFunc("/", getDueTasks)
-	go http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
-
-	// start Glados command handler
-	listener := glados.NewListener(cfg.Glados, log)
-	go listener.Listen(context.Background(), handleGladosCommand)
-
-	// shutdown gracefully upon termination
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	<-signalChan
-	listener.Close()
-	log.Info("Shutting down Habit Service")
+	http.HandleFunc("/mark", markHabit)
+	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
 }
 
 func getDueTasks(w http.ResponseWriter, req *http.Request) {
@@ -80,27 +67,39 @@ func getDueTasks(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(cards)
 }
 
-// @todo: create a command parser if there are more commands to handle in the future
-func handleGladosCommand(args []string) {
-	if len(args) != 3 || args[0] != "mark" {
-		log.Error("Could not parse Glados command from args: %v", args)
-		return
+func markHabit(w http.ResponseWriter, req *http.Request) {
+	reqBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Error("Could not parse HTTP request body: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	cell := args[1]
+	var body struct {
+		Cell   string `json:"cell"`
+		Symbol string `json:"symbol"`
+	}
+	json.Unmarshal(reqBody, &body)
+	cell := body.Cell
+	symbol := body.Symbol
+
 	matched, err := regexp.MatchString(`[a-zA-Z]{3}\ 202\d\![A-Z][1-9][0-9]?$|^100$`, cell)
 	if err != nil || matched == false {
 		log.Error("Invalid cell '%s' to mark habit in Glados command: %v", cell, err)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	symbol := args[2]
 	if !habit.IsValidMarkSymbol(symbol) {
-		log.Error("Invalid symbol '%s' to mark habit in Glados command from args: %v", symbol, args)
+		log.Error("Invalid symbol '%s' to mark habit in HTTP request", symbol)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := client.MarkHabit(cell, symbol); err != nil {
 		log.Error("Could not mark Habit on cell '%s' with symbol '%s': %v", cell, symbol, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
