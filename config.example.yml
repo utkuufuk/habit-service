@@ -1,9 +1,3 @@
-glados:
-  broker: <IP>:<PORT>
-  group_id: <group_id_str>
-  topic: <topic_str>
-
-
 http_port: 8091
 
 
