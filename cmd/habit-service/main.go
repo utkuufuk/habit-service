@@ -48,13 +48,18 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/", getDueTasks)
+	http.HandleFunc("/entrello", getDueHabitsForEntrello)
 	http.HandleFunc("/mark", markHabit)
 	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
 }
 
-func getDueTasks(w http.ResponseWriter, req *http.Request) {
-	cards, err := client.FetchNewCards()
+func getDueHabitsForEntrello(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	habits, err := client.FetchHabitsForEntrello()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		message := fmt.Sprintf("could not fetch new cards: %v", err)
@@ -64,10 +69,15 @@ func getDueTasks(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cards)
+	json.NewEncoder(w).Encode(habits)
 }
 
 func markHabit(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Error("Could not parse HTTP request body: %v", err)

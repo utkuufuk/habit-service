@@ -54,7 +54,7 @@ func GetClient(
 	return Client{spreadsheetId, service.Spreadsheets.Values, location}, nil
 }
 
-func (c Client) FetchNewCards() ([]trello.Card, error) {
+func (c Client) FetchHabitsForEntrello() ([]trello.Card, error) {
 	now := time.Now().In(c.location)
 	habits, err := c.fetchHabits(now)
 	if err != nil {
