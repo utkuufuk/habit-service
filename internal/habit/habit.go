@@ -31,6 +31,7 @@ type Client struct {
 }
 
 type habit struct {
+	Name     string
 	CellName string
 	State    string
 	Score    float64
@@ -55,7 +56,7 @@ func GetClient(
 
 func (c Client) FetchHabitsForEntrello() ([]trello.Card, error) {
 	now := time.Now().In(c.location)
-	habits, err := c.fetchHabits(now)
+	habits, err := c.FetchHabits(now)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch habits: %w", err)
 	}
@@ -65,6 +66,21 @@ func (c Client) FetchHabitsForEntrello() ([]trello.Card, error) {
 	}
 
 	return toCards(habits, now)
+}
+
+// FetchHabits retrieves the state of today's habits from the spreadsheet
+func (c Client) FetchHabits(now time.Time) (map[string]habit, error) {
+	rangeName, err := getRangeName(now, cell{"A", 1}, cell{"Z", now.Day() + dataRowIdx})
+	if err != nil {
+		return nil, fmt.Errorf("could not get range name: %w", err)
+	}
+
+	rows, err := c.readCells(rangeName)
+	if err != nil {
+		return nil, fmt.Errorf("could not read cells: %w", err)
+	}
+
+	return mapHabits(rows, now)
 }
 
 func (c Client) MarkHabit(cellName string, symbol string) error {
@@ -105,21 +121,6 @@ func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 		values[0][i] = score
 	}
 	return c.writeCells(values, rangeName)
-}
-
-// fetchHabits retrieves the state of today's habits from the spreadsheet
-func (c Client) fetchHabits(now time.Time) (map[string]habit, error) {
-	rangeName, err := getRangeName(now, cell{"A", 1}, cell{"Z", now.Day() + dataRowIdx})
-	if err != nil {
-		return nil, fmt.Errorf("could not get range name: %w", err)
-	}
-
-	rows, err := c.readCells(rangeName)
-	if err != nil {
-		return nil, fmt.Errorf("could not read cells: %w", err)
-	}
-
-	return mapHabits(rows, now)
 }
 
 // readCells reads a range of cell values with the given range
@@ -210,7 +211,7 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 			score = 0
 		}
 
-		habits[name] = habit{cellName, state, score}
+		habits[name] = habit{name, cellName, state, score}
 	}
 	return habits, nil
 }
