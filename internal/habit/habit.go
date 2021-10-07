@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	nameRowIndex     = 0
-	scoreRowIndex    = 2
-	dataRowOffset    = 2 // number of rows before the first data row starts in the spreadsheet
-	dataColumnOffset = 1 // number of columns before the first data column starts in the spreadsheet
-	dueHour          = 23
+	nameRowIdx    = 0 // number of rows before the name row starts in the spreadsheet
+	scoreRowIdx   = 1 // number of rows before the score row starts in the spreadsheet
+	dataRowIdx    = 2 // number of rows before the first data row starts in the spreadsheet
+	dataColumnIdx = 1 // number of columns before the first data column starts in the spreadsheet
+
+	dueHour = 23
 
 	symbolDone    = "✔"
 	symbolFailed  = "✘"
@@ -90,8 +91,8 @@ func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 	}
 
 	// get range name to write habit scores in the sheet
-	row := scoreRowIndex + 1
-	firstCol := string(rune(int('A') + dataColumnOffset))
+	row := scoreRowIdx + 1
+	firstCol := string(rune(int('A') + dataColumnIdx))
 	lastCol := string(rune(int('A') + len(habits)))
 	rangeName, err := getRangeName(now, cell{firstCol, row}, cell{lastCol, row})
 	if err != nil {
@@ -108,7 +109,7 @@ func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 
 // fetchHabits retrieves the state of today's habits from the spreadsheet
 func (c Client) fetchHabits(now time.Time) (map[string]habit, error) {
-	rangeName, err := getRangeName(now, cell{"A", 1}, cell{"Z", now.Day() + dataRowOffset})
+	rangeName, err := getRangeName(now, cell{"A", 1}, cell{"Z", now.Day() + dataRowIdx})
 	if err != nil {
 		return nil, fmt.Errorf("could not get range name: %w", err)
 	}
@@ -167,9 +168,9 @@ func toCards(habits map[string]habit, now time.Time) (cards []trello.Card, err e
 // mapHabits creates a map of habits for given a date and a spreadsheet row data
 func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 	habits := make(map[string]habit)
-	for col := dataColumnOffset; col < len(rows[0]); col++ {
+	for col := dataColumnIdx; col < len(rows[0]); col++ {
 		// evaluate the habit's cell name for today
-		c := cell{string(rune('A' + col)), date.Day() + dataRowOffset}
+		c := cell{string(rune('A' + col)), date.Day() + dataRowIdx}
 		cellName, err := getRangeName(date, c, c)
 		if err != nil {
 			return nil, err
@@ -177,12 +178,12 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 
 		// handle cases where the last N columns are blank which reduces the slice length by N
 		state := ""
-		if col < len(rows[date.Day()+dataRowOffset-1]) {
-			state = fmt.Sprintf("%v", rows[date.Day()+dataRowOffset-1][col])
+		if col < len(rows[date.Day()+dataRowIdx-1]) {
+			state = fmt.Sprintf("%v", rows[date.Day()+dataRowIdx-1][col])
 		}
 
 		// read habit name
-		name := fmt.Sprintf("%v", rows[nameRowIndex][col])
+		name := fmt.Sprintf("%v", rows[nameRowIdx][col])
 		if name == "" {
 			return nil, fmt.Errorf("habit name cannot be blank")
 		}
@@ -190,7 +191,7 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 		// calculate habit score
 		nom := 0
 		denom := date.Day()
-		for row := dataRowOffset; row < date.Day()+dataRowOffset; row++ {
+		for row := dataRowIdx; row < date.Day()+dataRowIdx; row++ {
 			if len(rows[row]) < col+1 {
 				continue
 			}
