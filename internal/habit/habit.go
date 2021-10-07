@@ -13,9 +13,8 @@ import (
 
 const (
 	nameRowIndex     = 0
-	durationRowIndex = 1
 	scoreRowIndex    = 2
-	dataRowOffset    = 3 // number of rows before the first data row starts in the spreadsheet
+	dataRowOffset    = 2 // number of rows before the first data row starts in the spreadsheet
 	dataColumnOffset = 1 // number of columns before the first data column starts in the spreadsheet
 	dueHour          = 23
 
@@ -33,7 +32,6 @@ type Client struct {
 type habit struct {
 	CellName string
 	State    string
-	Duration string
 	Score    float64
 }
 
@@ -81,6 +79,7 @@ func IsValidMarkSymbol(symbol string) bool {
 
 // @todo: make this public and call it periodically instead of within FetchNewCards
 func (c Client) updateScores(habits map[string]habit, now time.Time) error {
+	// map habit scores into a slice ordered by column
 	scores := make([]float64, len(habits))
 	var cellNameComponents []string
 	for _, habit := range habits {
@@ -90,6 +89,7 @@ func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 		scores[idx] = habit.Score
 	}
 
+	// get range name to write habit scores in the sheet
 	row := scoreRowIndex + 1
 	firstCol := string(rune(int('A') + dataColumnOffset))
 	lastCol := string(rune(int('A') + len(habits)))
@@ -153,14 +153,8 @@ func toCards(habits map[string]habit, now time.Time) (cards []trello.Card, err e
 		// include the day of month in card title to force overwrite in the beginning of the next day
 		title := fmt.Sprintf("%v (%d)", name, now.Day())
 
-		// include optional duration info in card description
-		description := habit.CellName
-		if habit.Duration != "–" {
-			description = fmt.Sprintf("%s\nDuration:%s", description, habit.Duration)
-		}
-
 		due := time.Date(now.Year(), now.Month(), now.Day(), dueHour, 0, 0, 0, now.Location())
-		c, err := trello.NewCard(title, description, &due)
+		c, err := trello.NewCard(title, habit.CellName, &due)
 		if err != nil {
 			return nil, fmt.Errorf("could not create habit card: %w", err)
 		}
@@ -193,9 +187,6 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 			return nil, fmt.Errorf("habit name cannot be blank")
 		}
 
-		// read optional habit duration value
-		duration := fmt.Sprintf("%v", rows[durationRowIndex][col])
-
 		// calculate habit score
 		nom := 0
 		denom := date.Day()
@@ -218,7 +209,7 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 			score = 0
 		}
 
-		habits[name] = habit{cellName, state, duration, score}
+		habits[name] = habit{cellName, state, score}
 	}
 	return habits, nil
 }
