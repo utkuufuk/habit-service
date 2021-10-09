@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
 	}
 
-	client, err = habit.GetClient(context.Background(), cfg.Habit.SpreadsheetId, location)
+	client, err = habit.GetClient(context.Background(), cfg.SpreadsheetId, location)
 	if err != nil {
 		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
 	}

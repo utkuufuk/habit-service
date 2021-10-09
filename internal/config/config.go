@@ -7,13 +7,9 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Habit struct {
-	SpreadsheetId string `yaml:"spreadsheet_id"`
-}
-
 type Config struct {
-	Habit            Habit  `yaml:"habit"`
 	HttpPort         int    `yaml:"http_port"`
+	SpreadsheetId    string `yaml:"spreadsheet_id"`
 	TimezoneLocation string `yaml:"timezone_location"`
 }
 
