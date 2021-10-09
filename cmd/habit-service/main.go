@@ -49,7 +49,7 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	habits, err := entrello.FetchHabitCards(client, location)
+	cards, err := entrello.FetchHabitCards(client, location)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
@@ -57,7 +57,7 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(habits)
+	json.NewEncoder(w).Encode(cards)
 }
 
 func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
@@ -86,5 +86,4 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 	}
 
 	fmt.Fprintf(w, message)
-	w.WriteHeader(http.StatusOK)
 }
