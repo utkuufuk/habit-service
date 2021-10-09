@@ -11,7 +11,7 @@ import (
 
 func RunCommand(client habit.Client, location *time.Location, args []string) (string, error) {
 	if len(args) == 0 {
-		return summarizeProgress(client, location)
+		return reportProgress(client, location)
 	}
 
 	if args[0] == "mark" && len(args) == 3 {
@@ -21,7 +21,7 @@ func RunCommand(client habit.Client, location *time.Location, args []string) (st
 	return "", fmt.Errorf("could not parse glados command from args: '%v'", args)
 }
 
-func summarizeProgress(client habit.Client, location *time.Location) (string, error) {
+func reportProgress(client habit.Client, location *time.Location) (string, error) {
 	now := time.Now().In(location)
 	currentHabits, err := client.FetchHabits(now)
 	if err != nil {

@@ -73,17 +73,20 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var response struct {
+	var request struct {
 		Args []string `json:"args"`
 	}
-	json.Unmarshal(body, &response)
+	json.Unmarshal(body, &request)
 
-	message, err := glados.RunCommand(client, location, response.Args)
+	message, err := glados.RunCommand(client, location, request.Args)
 	if err != nil {
 		fmt.Fprintf(w, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, message)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(struct {
+		Message string `json:"message"`
+	}{message})
 }
