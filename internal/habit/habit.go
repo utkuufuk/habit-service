@@ -28,7 +28,6 @@ type Client struct {
 }
 
 type Habit struct {
-	Name     string
 	CellName string
 	State    string
 	Score    float64
@@ -172,7 +171,7 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
 			score = 0
 		}
 
-		habits[name] = Habit{name, cellName, state, score}
+		habits[name] = Habit{cellName, state, score}
 	}
 	return habits, nil
 }
