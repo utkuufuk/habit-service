@@ -66,10 +66,15 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	type response struct {
+		Message string `json:"message"`
+	}
+	w.Header().Set("Content-Type", "application/json")
+
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		fmt.Fprintf(w, "Could not parse HTTP request body: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response{fmt.Sprintf("Could not parse HTTP request body: %v", err)})
 		return
 	}
 
@@ -80,13 +85,10 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 
 	message, err := glados.RunCommand(client, location, request.Args)
 	if err != nil {
-		fmt.Fprintf(w, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response{err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(struct {
-		Message string `json:"message"`
-	}{message})
+	json.NewEncoder(w).Encode(response{message})
 }

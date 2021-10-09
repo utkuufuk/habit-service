@@ -15,7 +15,7 @@ func RunCommand(client habit.Client, location *time.Location, args []string) (st
 	}
 
 	if args[0] == "mark" && len(args) == 3 {
-		return "", markHabit(client, args[0], args[1])
+		return "", markHabit(client, args[1], args[2])
 	}
 
 	return "", fmt.Errorf("could not parse glados command from args: '%v'", args)
