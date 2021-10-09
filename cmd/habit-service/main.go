@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
 	"github.com/utkuufuk/habit-service/internal/habit"
-	"github.com/utkuufuk/habit-service/internal/syslog"
 )
 
 var (
@@ -26,16 +26,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	log := syslog.NewLogger(cfg.Telegram.ChatId, cfg.Telegram.Token)
-
 	location, err = time.LoadLocation(cfg.TimezoneLocation)
 	if err != nil {
-		log.Fatal("Invalid timezone location: '%s': %v", err)
+		log.Fatalf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
 	}
 
 	client, err = habit.GetClient(context.Background(), cfg.Habit.SpreadsheetId, location)
 	if err != nil {
-		log.Fatal("Could not create gsheets client for Habit Service: %v", err)
+		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
 	}
 
 	http.HandleFunc("/entrello", handleEntrelloRequest)
@@ -70,6 +68,7 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "Could not parse HTTP request body: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	var response struct {
@@ -81,6 +80,7 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprintf(w, message)
