@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
+	"github.com/utkuufuk/habit-service/internal/entrello"
+	"github.com/utkuufuk/habit-service/internal/glados"
 	"github.com/utkuufuk/habit-service/internal/habit"
 )
 
@@ -47,7 +49,7 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	habits, err := fetchHabitsForEntrello()
+	habits, err := entrello.FetchHabitCards(client, location)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
@@ -76,7 +78,7 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 	}
 	json.Unmarshal(body, &response)
 
-	message, err := runGladosCommand(response.Args)
+	message, err := glados.RunCommand(client, location, response.Args)
 	if err != nil {
 		fmt.Fprintf(w, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)

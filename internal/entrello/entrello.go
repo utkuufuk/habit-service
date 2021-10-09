@@ -1,4 +1,4 @@
-package main
+package entrello
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ const (
 	dueHour = 23
 )
 
-func fetchHabitsForEntrello() ([]trello.Card, error) {
+func FetchHabitCards(client habit.Client, location *time.Location) ([]trello.Card, error) {
 	now := time.Now().In(location)
 
 	habits, err := client.FetchHabits(now)

@@ -1,4 +1,4 @@
-package main
+package glados
 
 import (
 	"fmt"
@@ -9,19 +9,19 @@ import (
 	"github.com/utkuufuk/habit-service/internal/habit"
 )
 
-func runGladosCommand(args []string) (string, error) {
+func RunCommand(client habit.Client, location *time.Location, args []string) (string, error) {
 	if len(args) == 0 {
-		return summarizeProgress()
+		return summarizeProgress(client, location)
 	}
 
 	if args[0] == "mark" && len(args) == 3 {
-		return "", markHabit(args[0], args[1])
+		return "", markHabit(client, args[0], args[1])
 	}
 
 	return "", fmt.Errorf("could not parse glados command from args: '%v'", args)
 }
 
-func summarizeProgress() (string, error) {
+func summarizeProgress(client habit.Client, location *time.Location) (string, error) {
 	now := time.Now().In(location)
 	currentHabits, err := client.FetchHabits(now)
 	if err != nil {
@@ -52,7 +52,7 @@ func summarizeProgress() (string, error) {
 	return "", nil
 }
 
-func markHabit(cell, symbol string) error {
+func markHabit(client habit.Client, cell, symbol string) error {
 	matched, err := regexp.MatchString(`[a-zA-Z]{3}\ 202\d\![A-Z][1-9][0-9]?$|^100$`, cell)
 	if err != nil || matched == false {
 		return fmt.Errorf("Invalid cell '%s' to mark habit in Glados command: %v", cell, err)
