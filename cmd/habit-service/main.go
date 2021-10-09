@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
@@ -16,55 +15,44 @@ import (
 )
 
 var (
-	cfg    config.Config
-	client habit.Client
-	log    syslog.Logger
+	client   habit.Client
+	location *time.Location
 )
 
-func init() {
-	var err error
-	cfg, err = config.ReadConfig("config.yml")
+func main() {
+	cfg, err := config.ReadConfig("config.yml")
 	if err != nil {
 		fmt.Printf("Could not read config variables: %v", err)
 		os.Exit(1)
 	}
 
-	log = syslog.NewLogger(cfg.Telegram.ChatId, cfg.Telegram.Token)
+	log := syslog.NewLogger(cfg.Telegram.ChatId, cfg.Telegram.Token)
 
-	location, err := time.LoadLocation(cfg.TimezoneLocation)
+	location, err = time.LoadLocation(cfg.TimezoneLocation)
 	if err != nil {
-		log.Warn(
-			"Warning: invalid timezone location: '%s', falling back to UTC: %v",
-			cfg.TimezoneLocation,
-			err,
-		)
-		location, _ = time.LoadLocation("UTC")
+		log.Fatal("Invalid timezone location: '%s': %v", err)
 	}
 
 	client, err = habit.GetClient(context.Background(), cfg.Habit.SpreadsheetId, location)
 	if err != nil {
 		log.Fatal("Could not create gsheets client for Habit Service: %v", err)
 	}
-}
 
-func main() {
-	http.HandleFunc("/entrello", getDueHabitsForEntrello)
-	http.HandleFunc("/mark", markHabit)
+	http.HandleFunc("/entrello", handleEntrelloRequest)
+	http.HandleFunc("/glados", handleGladosCommand)
 	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
 }
 
-func getDueHabitsForEntrello(w http.ResponseWriter, req *http.Request) {
+func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	habits, err := client.FetchHabitsForEntrello()
+	habits, err := fetchHabitsForEntrello()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		message := fmt.Sprintf("could not fetch new cards: %v", err)
-		log.Info(message)
-		fmt.Fprintf(w, message)
+		fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
 		return
 	}
 
@@ -72,44 +60,29 @@ func getDueHabitsForEntrello(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(habits)
 }
 
-func markHabit(w http.ResponseWriter, req *http.Request) {
+func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	reqBody, err := ioutil.ReadAll(req.Body)
+	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		log.Error("Could not parse HTTP request body: %v", err)
+		fmt.Fprintf(w, "Could not parse HTTP request body: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	var body struct {
-		Cell   string `json:"cell"`
-		Symbol string `json:"symbol"`
+	var response struct {
+		Args []string `json:"args"`
 	}
-	json.Unmarshal(reqBody, &body)
-	cell := body.Cell
-	symbol := body.Symbol
+	json.Unmarshal(body, &response)
 
-	matched, err := regexp.MatchString(`[a-zA-Z]{3}\ 202\d\![A-Z][1-9][0-9]?$|^100$`, cell)
-	if err != nil || matched == false {
-		log.Error("Invalid cell '%s' to mark habit in Glados command: %v", cell, err)
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
-	if !habit.IsValidMarkSymbol(symbol) {
-		log.Error("Invalid symbol '%s' to mark habit in HTTP request", symbol)
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
-
-	if err := client.MarkHabit(cell, symbol); err != nil {
-		log.Error("Could not mark Habit on cell '%s' with symbol '%s': %v", cell, symbol, err)
+	message, err := runGladosCommand(response.Args)
+	if err != nil {
+		fmt.Fprintf(w, "%v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
 
+	fmt.Fprintf(w, message)
 	w.WriteHeader(http.StatusOK)
 }

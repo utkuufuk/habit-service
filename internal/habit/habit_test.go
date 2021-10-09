@@ -8,64 +8,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestToCards(t *testing.T) {
-	cellName := "Jun 2020!C3"
-
-	tt := []struct {
-		name     string
-		habits   map[string]habit
-		numCards int
-		err      error
-	}{
-		{
-			name: "marked habits",
-			habits: map[string]habit{
-				"a": {"a", cellName, "✔", 0},
-				"b": {"b", cellName, "x", 0},
-				"c": {"c", cellName, "✘", 0},
-				"d": {"d", cellName, "–", 0},
-				"e": {"e", cellName, "-", 0},
-			},
-			numCards: 0,
-			err:      nil,
-		},
-		{
-			name: "some marked some unmarked habits",
-			habits: map[string]habit{
-				"a": {"a", cellName, "✔", 0},
-				"b": {"b", cellName, "x", 0},
-				"c": {"c", cellName, "✘", 0},
-				"d": {"d", cellName, "–", 0},
-				"e": {"e", cellName, "-", 0},
-				"f": {"f", cellName, "", 0},
-				"g": {"g", cellName, "", 0},
-			},
-			numCards: 2,
-			err:      nil,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			cards, err := toCards(tc.habits, time.Now())
-			if same := (err == nil && tc.err == nil) || tc.err != nil && err != nil; !same {
-				t.Fatalf("want '%v', got '%v'", tc.err, err)
-			}
-
-			if len(cards) != tc.numCards {
-				t.Errorf("expected %d cards, got %d", tc.numCards, len(cards))
-			}
-		})
-	}
-}
-
 func TestMapHabits(t *testing.T) {
 	any := "."
 
 	tt := []struct {
 		name string
 		rows [][]string
-		out  map[string]habit
+		out  map[string]Habit
 		err  error
 	}{
 		{
@@ -87,7 +36,7 @@ func TestMapHabits(t *testing.T) {
 				{any, "✔", "✘", "–"},
 				{any, "✔", "✔", "✘"},
 			},
-			out: map[string]habit{
+			out: map[string]Habit{
 				"a": {"a", "Jan 2020!B4", "✔", 1},
 				"b": {"b", "Jan 2020!C4", "✔", 0.5},
 				"c": {"c", "Jan 2020!D4", "✘", 0},
@@ -101,7 +50,7 @@ func TestMapHabits(t *testing.T) {
 				{any, "✔", "✘", "–"},
 				{any, "✔", "✔", "✘"},
 			},
-			out: map[string]habit{
+			out: map[string]Habit{
 				"a": {"a", "Jan 2020!B4", "✔", 1},
 				"b": {"b", "Jan 2020!C4", "✔", 0.5},
 				"c": {"c", "Jan 2020!D4", "✘", 0},
@@ -115,7 +64,7 @@ func TestMapHabits(t *testing.T) {
 				{any, "✔", "✘", "", ""},
 				{any, "✔", "✘", "", "–"},
 			},
-			out: map[string]habit{
+			out: map[string]Habit{
 				"a": {"a", "Jan 2020!B4", "✔", 1},
 				"b": {"b", "Jan 2020!C4", "✘", 0},
 				"c": {"c", "Jan 2020!D4", "", 0},
@@ -130,7 +79,7 @@ func TestMapHabits(t *testing.T) {
 				{any, "✔", "✘", ""},
 				{any, "✔", "✘", "–"},
 			},
-			out: map[string]habit{
+			out: map[string]Habit{
 				"a": {"a", "Jan 2020!B4", "✔", 1},
 				"b": {"b", "Jan 2020!C4", "✘", 0},
 				"c": {"c", "Jan 2020!D4", "–", 0},
