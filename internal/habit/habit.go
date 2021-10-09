@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/utkuufuk/entrello/pkg/trello"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -16,8 +15,6 @@ const (
 	scoreRowIdx   = 1 // number of rows before the score row starts in the spreadsheet
 	dataRowIdx    = 2 // number of rows before the first data row starts in the spreadsheet
 	dataColumnIdx = 1 // number of columns before the first data column starts in the spreadsheet
-
-	dueHour = 23
 
 	symbolDone    = "✔"
 	symbolFailed  = "✘"
@@ -30,7 +27,7 @@ type Client struct {
 	location      *time.Location
 }
 
-type habit struct {
+type Habit struct {
 	CellName string
 	State    string
 	Score    float64
@@ -53,18 +50,19 @@ func GetClient(
 	return Client{spreadsheetId, service.Spreadsheets.Values, location}, nil
 }
 
-func (c Client) FetchHabitsForEntrello() ([]trello.Card, error) {
-	now := time.Now().In(c.location)
-	habits, err := c.fetchHabits(now)
+// FetchHabits retrieves the state of today's habits from the spreadsheet
+func (c Client) FetchHabits(now time.Time) (map[string]Habit, error) {
+	rangeName, err := getRangeName(now, cell{"A", 1}, cell{"Z", now.Day() + dataRowIdx})
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch habits: %w", err)
+		return nil, fmt.Errorf("could not get range name: %w", err)
 	}
 
-	if err = c.updateScores(habits, now); err != nil {
-		return nil, fmt.Errorf("could not update habit scores: %w", err)
+	rows, err := c.readCells(rangeName)
+	if err != nil {
+		return nil, fmt.Errorf("could not read cells: %w", err)
 	}
 
-	return toCards(habits, now)
+	return mapHabits(rows, now)
 }
 
 func (c Client) MarkHabit(cellName string, symbol string) error {
@@ -78,8 +76,7 @@ func IsValidMarkSymbol(symbol string) bool {
 	return symbol == symbolDone || symbol == symbolFailed || symbol == symbolSkipped
 }
 
-// @todo: make this public and call it periodically instead of within FetchNewCards
-func (c Client) updateScores(habits map[string]habit, now time.Time) error {
+func (c Client) UpdateScores(habits map[string]Habit, now time.Time) error {
 	// map habit scores into a slice ordered by column
 	scores := make([]float64, len(habits))
 	var cellNameComponents []string
@@ -107,21 +104,6 @@ func (c Client) updateScores(habits map[string]habit, now time.Time) error {
 	return c.writeCells(values, rangeName)
 }
 
-// fetchHabits retrieves the state of today's habits from the spreadsheet
-func (c Client) fetchHabits(now time.Time) (map[string]habit, error) {
-	rangeName, err := getRangeName(now, cell{"A", 1}, cell{"Z", now.Day() + dataRowIdx})
-	if err != nil {
-		return nil, fmt.Errorf("could not get range name: %w", err)
-	}
-
-	rows, err := c.readCells(rangeName)
-	if err != nil {
-		return nil, fmt.Errorf("could not read cells: %w", err)
-	}
-
-	return mapHabits(rows, now)
-}
-
 // readCells reads a range of cell values with the given range
 func (c Client) readCells(rangeName string) ([][]interface{}, error) {
 	resp, err := c.service.Get(c.spreadsheetId, rangeName).Do()
@@ -144,30 +126,9 @@ func (c Client) writeCells(values [][]interface{}, rangeName string) error {
 	return nil
 }
 
-// toCards returns a slice of trello cards from the given habits which haven't been marked today
-func toCards(habits map[string]habit, now time.Time) (cards []trello.Card, err error) {
-	for name, habit := range habits {
-		if habit.State != "" {
-			continue
-		}
-
-		// include the day of month in card title to force overwrite in the beginning of the next day
-		title := fmt.Sprintf("%v (%d)", name, now.Day())
-
-		due := time.Date(now.Year(), now.Month(), now.Day(), dueHour, 0, 0, 0, now.Location())
-		c, err := trello.NewCard(title, habit.CellName, &due)
-		if err != nil {
-			return nil, fmt.Errorf("could not create habit card: %w", err)
-		}
-
-		cards = append(cards, c)
-	}
-	return cards, nil
-}
-
 // mapHabits creates a map of habits for given a date and a spreadsheet row data
-func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
-	habits := make(map[string]habit)
+func mapHabits(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
+	habits := make(map[string]Habit)
 	for col := dataColumnIdx; col < len(rows[0]); col++ {
 		// evaluate the habit's cell name for today
 		c := cell{string(rune('A' + col)), date.Day() + dataRowIdx}
@@ -210,7 +171,7 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]habit, error) {
 			score = 0
 		}
 
-		habits[name] = habit{cellName, state, score}
+		habits[name] = Habit{cellName, state, score}
 	}
 	return habits, nil
 }

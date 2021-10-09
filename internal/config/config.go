@@ -7,20 +7,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Habit struct {
-	SpreadsheetId string `yaml:"spreadsheet_id"`
-}
-
-type Telegram struct {
-	Token  string `yaml:"token"`
-	ChatId int64  `yaml:"chat_id"`
-}
-
 type Config struct {
-	Habit            Habit    `yaml:"habit"`
-	HttpPort         int      `yaml:"http_port"`
-	Telegram         Telegram `yaml:"telegram"`
-	TimezoneLocation string   `yaml:"timezone_location"`
+	HttpPort         int    `yaml:"http_port"`
+	SpreadsheetId    string `yaml:"spreadsheet_id"`
+	TimezoneLocation string `yaml:"timezone_location"`
 }
 
 // ReadConfig reads the YAML config file & decodes all parameters
