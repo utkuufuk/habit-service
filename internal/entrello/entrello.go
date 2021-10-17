@@ -12,23 +12,8 @@ const (
 	dueHour = 23
 )
 
-func FetchHabitCards(client habit.Client, location *time.Location) ([]trello.Card, error) {
-	now := time.Now().In(location)
-
-	habits, err := client.FetchHabits(now)
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch habits: %w", err)
-	}
-
-	if err = client.UpdateScores(habits, now); err != nil {
-		return nil, fmt.Errorf("could not update habit scores: %w", err)
-	}
-
-	return toCards(habits, now)
-}
-
-// toCards returns a slice of trello cards from the given habits which haven't been marked today
-func toCards(habits map[string]habit.Habit, now time.Time) (cards []trello.Card, err error) {
+// ToCards returns a slice of trello cards from the given habits which haven't been marked today
+func ToCards(habits map[string]habit.Habit, now time.Time) (cards []trello.Card, err error) {
 	for name, habit := range habits {
 		if habit.State != "" {
 			continue

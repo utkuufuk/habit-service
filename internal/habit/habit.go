@@ -24,7 +24,6 @@ const (
 type Client struct {
 	spreadsheetId string
 	service       *sheets.SpreadsheetsValuesService
-	location      *time.Location
 }
 
 type Habit struct {
@@ -38,16 +37,12 @@ type cell struct {
 	row int
 }
 
-func GetClient(
-	ctx context.Context,
-	spreadsheetId string,
-	location *time.Location,
-) (client Client, err error) {
+func GetClient(ctx context.Context, spreadsheetId string) (client Client, err error) {
 	service, err := initializeService(ctx)
 	if err != nil {
 		return client, fmt.Errorf("could not initialize gsheets service: %w", err)
 	}
-	return Client{spreadsheetId, service.Spreadsheets.Values, location}, nil
+	return Client{spreadsheetId, service.Spreadsheets.Values}, nil
 }
 
 // FetchHabits retrieves the state of today's habits from the spreadsheet

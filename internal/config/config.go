@@ -1,27 +1,59 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
 
-type Config struct {
-	HttpPort         int    `yaml:"http_port"`
-	SpreadsheetId    string `yaml:"spreadsheet_id"`
-	TimezoneLocation string `yaml:"timezone_location"`
+type telegram struct {
+	Token  string `yaml:"token"`
+	ChatId int64  `yaml:"chat_id"`
 }
 
-// ReadConfig reads the YAML config file & decodes all parameters
-func ReadConfig(fileName string) (cfg Config, err error) {
-	f, err := os.Open(fileName)
+type config struct {
+	HttpPort         int      `yaml:"http_port"`
+	SpreadsheetId    string   `yaml:"spreadsheet_id"`
+	TimezoneLocation string   `yaml:"timezone_location"`
+	Telegram         telegram `yaml:"telegram"`
+}
+
+type Config struct {
+	HttpPort         int
+	SpreadsheetId    string
+	TimezoneLocation *time.Location
+	TelegramToken    string
+	TelegramChatId   int64
+}
+
+var Values Config
+
+func init() {
+	f, err := os.Open("config.yml")
 	if err != nil {
-		return cfg, fmt.Errorf("could not open config file: %v", err)
+		log.Fatalf("could not open config file: %v", err)
 	}
 	defer f.Close()
 
+	var cfg config
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&cfg)
-	return cfg, err
+	if err != nil {
+		log.Fatalf("could not decode config: %v", err)
+	}
+
+	location, err := time.LoadLocation(cfg.TimezoneLocation)
+	if err != nil {
+		log.Fatalf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
+	}
+
+	Values = Config{
+		cfg.HttpPort,
+		cfg.SpreadsheetId,
+		location,
+		cfg.Telegram.Token,
+		cfg.Telegram.ChatId,
+	}
 }

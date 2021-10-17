@@ -7,40 +7,27 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
-	"github.com/utkuufuk/habit-service/internal/entrello"
 	"github.com/utkuufuk/habit-service/internal/glados"
 	"github.com/utkuufuk/habit-service/internal/habit"
+	"github.com/utkuufuk/habit-service/internal/service"
 )
 
 var (
-	client   habit.Client
-	location *time.Location
+	client habit.Client
 )
 
 func main() {
-	cfg, err := config.ReadConfig("config.yml")
-	if err != nil {
-		fmt.Printf("Could not read config variables: %v", err)
-		os.Exit(1)
-	}
-
-	location, err = time.LoadLocation(cfg.TimezoneLocation)
-	if err != nil {
-		log.Fatalf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
-	}
-
-	client, err = habit.GetClient(context.Background(), cfg.SpreadsheetId, location)
+	var err error
+	client, err = habit.GetClient(context.Background(), config.Values.SpreadsheetId)
 	if err != nil {
 		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
 	}
 
 	http.HandleFunc("/entrello", handleEntrelloRequest)
 	http.HandleFunc("/glados", handleGladosCommand)
-	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Values.HttpPort), nil)
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
@@ -49,7 +36,10 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cards, err := entrello.FetchHabitCards(client, location)
+	action := service.FetchHabitsAsTrelloCardsAction{
+		TimezoneLocation: config.Values.TimezoneLocation,
+	}
+	cards, err := action.Run(req.Context(), client)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
@@ -87,7 +77,14 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	message, err := glados.RunCommand(client, location, request.Args)
+	action, err := glados.ParseCommand(request.Args, config.Values)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response{fmt.Sprintf("Could not parse Glados command: %v", err)})
+		return
+	}
+
+	message, err := action.Run(req.Context(), client)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response{err.Error()})
