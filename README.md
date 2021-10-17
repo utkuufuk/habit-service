@@ -27,12 +27,13 @@ The Docker image is updated whenever a new commit is pushed to the `master` bran
         docker.pkg.github.com/utkuufuk/habit-service/habit-service-image:latest
     ```
 
-### Running Cron Jobs with Docker
+### Running Other Executables with Docker
+Example:
 ```sh
 docker run --rm \
     -v ~/.config/habit-service/config.yml:/bin/config.yml \
     -v ~/.config/habit-service/token.json:/bin/token.json \
     -v ~/.config/habit-service/credentials.json:/bin/credentials.json \
     docker.pkg.github.com/utkuufuk/habit-service/habit-service-image:latest \
-    ./bin/progress-report # OR ./bin/score-update
+    ./bin/progress-report
 ```
