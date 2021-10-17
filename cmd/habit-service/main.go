@@ -17,12 +17,14 @@ import (
 )
 
 var (
+	cfg      config.Config
 	client   habit.Client
 	location *time.Location
 )
 
 func main() {
-	cfg, err := config.ReadConfig("config.yml")
+	var err error
+	cfg, err = config.ReadConfig("config.yml")
 	if err != nil {
 		fmt.Printf("Could not read config variables: %v", err)
 		os.Exit(1)
@@ -38,9 +40,16 @@ func main() {
 		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
 	}
 
-	http.HandleFunc("/entrello", handleEntrelloRequest)
-	http.HandleFunc("/glados", handleGladosCommand)
-	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
+	msg, err := glados.RunCommand(context.Background(), client, location, []string{}, cfg)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	fmt.Println(msg)
+	return
+
+	// http.HandleFunc("/entrello", handleEntrelloRequest)
+	// http.HandleFunc("/glados", handleGladosCommand)
+	// http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
@@ -87,7 +96,7 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	message, err := glados.RunCommand(client, location, request.Args)
+	message, err := glados.RunCommand(context.Background(), client, location, request.Args, cfg)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response{err.Error()})

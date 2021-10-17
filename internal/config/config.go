@@ -7,10 +7,18 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Mailgun struct {
+	ApiKey string `yaml:"api_key"`
+	Domain string `yaml:"domain"`
+	From   string `yaml:"from"`
+	To     string `yaml:"to"`
+}
+
 type Config struct {
-	HttpPort         int    `yaml:"http_port"`
-	SpreadsheetId    string `yaml:"spreadsheet_id"`
-	TimezoneLocation string `yaml:"timezone_location"`
+	HttpPort         int     `yaml:"http_port"`
+	SpreadsheetId    string  `yaml:"spreadsheet_id"`
+	TimezoneLocation string  `yaml:"timezone_location"`
+	Mailgun          Mailgun `yaml:"mailgun"`
 }
 
 // ReadConfig reads the YAML config file & decodes all parameters

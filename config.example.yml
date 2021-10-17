@@ -1,3 +1,9 @@
 http_port: 8091
 spreadsheet_id: xxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxx
 timezone_location: Europe/Istanbul
+
+mailgun:
+  api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  domain: mg.tododock.com
+  from: Habit Service <habit-service@tododock.com>
+  to: utkuufuk@gmail.com
