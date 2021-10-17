@@ -17,7 +17,7 @@ func RunCommand(
 	cfg config.Config,
 ) (string, error) {
 	if len(args) == 0 {
-		return reportProgress(ctx, client, location, cfg.Mailgun)
+		return reportProgress(ctx, client, location, cfg.Telegram)
 	}
 
 	if args[0] == "mark" && len(args) == 3 {

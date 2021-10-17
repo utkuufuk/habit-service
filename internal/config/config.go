@@ -7,18 +7,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Mailgun struct {
-	ApiKey string `yaml:"api_key"`
-	Domain string `yaml:"domain"`
-	From   string `yaml:"from"`
-	To     string `yaml:"to"`
+type Telegram struct {
+	Token  string `yaml:"token"`
+	ChatId int64  `yaml:"chat_id"`
 }
 
 type Config struct {
-	HttpPort         int     `yaml:"http_port"`
-	SpreadsheetId    string  `yaml:"spreadsheet_id"`
-	TimezoneLocation string  `yaml:"timezone_location"`
-	Mailgun          Mailgun `yaml:"mailgun"`
+	HttpPort         int      `yaml:"http_port"`
+	SpreadsheetId    string   `yaml:"spreadsheet_id"`
+	TimezoneLocation string   `yaml:"timezone_location"`
+	Telegram         Telegram `yaml:"telegram"`
 }
 
 // ReadConfig reads the YAML config file & decodes all parameters

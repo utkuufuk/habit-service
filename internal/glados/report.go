@@ -3,9 +3,10 @@ package glados
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"time"
 
-	"github.com/mailgun/mailgun-go/v3"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/utkuufuk/habit-service/internal/config"
 	"github.com/utkuufuk/habit-service/internal/habit"
 )
@@ -14,7 +15,7 @@ func reportProgress(
 	ctx context.Context,
 	client habit.Client,
 	location *time.Location,
-	mailgunCfg config.Mailgun,
+	telegramCfg config.Telegram,
 ) (string, error) {
 	now := time.Now().In(location)
 	currentHabits, err := client.FetchHabits(now)
@@ -36,20 +37,23 @@ func reportProgress(
 
 	path := fmt.Sprintf("./reports/progress-report-%s.png", now.Format("2006-01-02T15:04:05"))
 	table.save(path)
-	return "habit progress report email sent", emailProgressReport(ctx, mailgunCfg, path, now)
+	return "habit progress report sent", sendProgressReport(telegramCfg, path)
 }
 
-func emailProgressReport(ctx context.Context, mailgunCfg config.Mailgun, path string, now time.Time) error {
-	mg := mailgun.NewMailgun(mailgunCfg.Domain, mailgunCfg.ApiKey)
-	mg.SetAPIBase(mailgun.APIBaseEU)
-	m := mg.NewMessage(
-		mailgunCfg.From,
-		fmt.Sprintf("Habit Progress Report (%s)", now.Format("Jan-02-2006")),
-		"",
-		mailgunCfg.To,
-	)
-	m.AddAttachment(path)
+func sendProgressReport(telegramCfg config.Telegram, path string) error {
+	bot, err := tgbotapi.NewBotAPI(telegramCfg.Token)
+	if err != nil {
+		return fmt.Errorf("could not initialize Telegram bot client: %w", err)
+	}
 
-	_, _, err := mg.Send(ctx, m)
+	photoBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("could not read progress report image '%s': %w", path, err)
+	}
+
+	_, err = bot.Send(tgbotapi.NewPhotoUpload(telegramCfg.ChatId, tgbotapi.FileBytes{
+		Name:  "picture",
+		Bytes: photoBytes,
+	}))
 	return err
 }
