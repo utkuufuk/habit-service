@@ -35,5 +35,5 @@ docker run --rm \
     -v ~/.config/habit-service/token.json:/bin/token.json \
     -v ~/.config/habit-service/credentials.json:/bin/credentials.json \
     docker.pkg.github.com/utkuufuk/habit-service/habit-service-image:latest \
-    ./bin/progress-report
+    ./progress-report
 ```

@@ -21,10 +21,8 @@ func main() {
 		TelegramToken:    config.Values.TelegramToken,
 		TimezoneLocation: config.Values.TimezoneLocation,
 	}
-	message, err := action.Run(ctx, client)
+	_, err = action.Run(ctx, client)
 	if err != nil {
 		log.Fatalf("Could not run Glados command: %v", err)
 	}
-
-	log.Println(message)
 }
