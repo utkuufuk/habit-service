@@ -1,28 +1,27 @@
 package glados
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
-	"github.com/utkuufuk/habit-service/internal/habit"
+	"github.com/utkuufuk/habit-service/internal/service"
 )
 
-func RunCommand(
-	ctx context.Context,
-	client habit.Client,
-	location *time.Location,
-	args []string,
-	cfg config.Config,
-) (string, error) {
+func ParseCommand(args []string, cfg config.Config) (service.Action, error) {
 	if len(args) == 0 {
-		return reportProgress(ctx, client, location, cfg.Telegram)
+		return service.ReportProgressAction{
+			TelegramChatId:   cfg.TelegramChatId,
+			TelegramToken:    cfg.TelegramToken,
+			TimezoneLocation: cfg.TimezoneLocation,
+		}, nil
 	}
 
 	if args[0] == "mark" && len(args) == 3 {
-		return "", markHabit(client, args[1], args[2])
+		return service.MarkHabitAction{
+			Cell:   args[1],
+			Symbol: args[2],
+		}, nil
 	}
 
-	return "", fmt.Errorf("could not parse glados command from args: '%v'", args)
+	return nil, fmt.Errorf("could not parse glados command from args: '%v'", args)
 }

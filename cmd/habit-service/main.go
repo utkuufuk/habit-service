@@ -7,49 +7,33 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/utkuufuk/habit-service/internal/config"
-	"github.com/utkuufuk/habit-service/internal/entrello"
 	"github.com/utkuufuk/habit-service/internal/glados"
 	"github.com/utkuufuk/habit-service/internal/habit"
+	"github.com/utkuufuk/habit-service/internal/service"
 )
 
 var (
-	cfg      config.Config
-	client   habit.Client
-	location *time.Location
+	cfg    config.Config
+	client habit.Client
 )
 
 func main() {
 	var err error
 	cfg, err = config.ReadConfig("config.yml")
 	if err != nil {
-		fmt.Printf("Could not read config variables: %v", err)
-		os.Exit(1)
+		log.Fatalf("Could not read config variables: %v", err)
 	}
 
-	location, err = time.LoadLocation(cfg.TimezoneLocation)
-	if err != nil {
-		log.Fatalf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
-	}
-
-	client, err = habit.GetClient(context.Background(), cfg.SpreadsheetId, location)
+	client, err = habit.GetClient(context.Background(), cfg.SpreadsheetId, cfg.TimezoneLocation)
 	if err != nil {
 		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
 	}
 
-	msg, err := glados.RunCommand(context.Background(), client, location, []string{}, cfg)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	fmt.Println(msg)
-	return
-
-	// http.HandleFunc("/entrello", handleEntrelloRequest)
-	// http.HandleFunc("/glados", handleGladosCommand)
-	// http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
+	http.HandleFunc("/entrello", handleEntrelloRequest)
+	http.HandleFunc("/glados", handleGladosCommand)
+	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
@@ -58,7 +42,10 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cards, err := entrello.FetchHabitCards(client, location)
+	action := service.FetchHabitsAsTrelloCardsAction{
+		TimezoneLocation: cfg.TimezoneLocation,
+	}
+	cards, err := action.Run(req.Context(), client)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
@@ -96,7 +83,14 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	message, err := glados.RunCommand(context.Background(), client, location, request.Args, cfg)
+	action, err := glados.ParseCommand(request.Args, cfg)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response{fmt.Sprintf("Could not parse Glados command: %v", err)})
+		return
+	}
+
+	message, err := action.Run(req.Context(), client)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response{err.Error()})

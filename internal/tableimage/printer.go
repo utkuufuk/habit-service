@@ -1,26 +1,24 @@
-package glados
+package tableimage
 
 import (
 	"strconv"
-
-	"github.com/utkuufuk/habit-service/internal/tableimage"
 )
 
 type table struct {
-	rows []tableimage.TR
+	rows []TR
 }
 
-func newTable() *table {
-	return &table{make([]tableimage.TR, 0)}
+func NewTable() *table {
+	return &table{make([]TR, 0)}
 }
 
-func (t *table) save(path string) {
-	ti := tableimage.Init("#fff", tableimage.Png, path)
+func (t *table) Save(path string) {
+	ti := Init("#fff", Png, path)
 
 	ti.AddTH(
-		tableimage.TR{
+		TR{
 			BorderColor: "#000",
-			Tds: []tableimage.TD{
+			Tds: []TD{
 				{
 					Color: "#000",
 					Text:  "Habit",
@@ -45,15 +43,15 @@ func (t *table) save(path string) {
 	ti.Save()
 }
 
-func (t *table) addRow(name string, last, current float64) {
+func (t *table) AddRow(name string, last, current float64) {
 	deltaColor := "#C82538"
 	if current > last {
 		deltaColor = "#2E7F18"
 	}
 
-	row := tableimage.TR{
+	row := TR{
 		BorderColor: "#000",
-		Tds: []tableimage.TD{
+		Tds: []TD{
 			{
 				Color: "#000",
 				Text:  name,

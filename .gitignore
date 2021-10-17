@@ -1,4 +1,4 @@
 config.yml
 *.json
 *.rest
-/reports/
+/progress-reports/
