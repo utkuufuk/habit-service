@@ -32,7 +32,7 @@ const (
 	tablePadding     = 20
 	letterPerPx      = 10
 	separatorPadding = 10
-	wrapWordsLen     = 20
+	wrapWordsLen     = 12
 	columnSpace      = wrapWordsLen * letterPerPx
 	Png              = "png"
 	Jpeg             = "jpg"

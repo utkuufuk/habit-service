@@ -3,7 +3,6 @@ package glados
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/mailgun/mailgun-go/v3"
@@ -32,33 +31,23 @@ func reportProgress(
 
 	table := newTable()
 	for name, habit := range currentHabits {
-		sign := ""
-		if habit.Score > previousHabits[name].Score {
-			sign = "+"
-		}
-
-		currentScore := strconv.FormatFloat(habit.Score*100, 'f', 0, 32)
-		lastScore := strconv.FormatFloat(previousHabits[name].Score*100, 'f', 0, 32)
-		delta := strconv.FormatFloat((habit.Score-previousHabits[name].Score)*100, 'f', 0, 32)
-		table.addRow(name, lastScore, currentScore, sign+delta)
+		table.addRow(name, previousHabits[name].Score*100, habit.Score*100)
 	}
 
 	path := fmt.Sprintf("./reports/progress-report-%s.png", now.Format("2006-01-02T15:04:05"))
 	table.save(path)
-	return "habit progress report email sent", sendProgressReportEmail(
-		ctx,
-		mailgunCfg.ApiKey,
-		mailgunCfg.Domain,
-		mailgunCfg.From,
-		mailgunCfg.To,
-		path,
-	)
+	return "habit progress report email sent", emailProgressReport(ctx, mailgunCfg, path, now)
 }
 
-func sendProgressReportEmail(ctx context.Context, apiKey, domain, from, to, path string) error {
-	mg := mailgun.NewMailgun(domain, apiKey)
+func emailProgressReport(ctx context.Context, mailgunCfg config.Mailgun, path string, now time.Time) error {
+	mg := mailgun.NewMailgun(mailgunCfg.Domain, mailgunCfg.ApiKey)
 	mg.SetAPIBase(mailgun.APIBaseEU)
-	m := mg.NewMessage(from, "Habit Progress Report", "Testing some Mailgun awesomeness!", to)
+	m := mg.NewMessage(
+		mailgunCfg.From,
+		fmt.Sprintf("Habit Progress Report (%s)", now.Format("Jan-02-2006")),
+		"",
+		mailgunCfg.To,
+	)
 	m.AddAttachment(path)
 
 	_, _, err := mg.Send(ctx, m)

@@ -1,6 +1,8 @@
 package glados
 
 import (
+	"strconv"
+
 	"github.com/utkuufuk/habit-service/internal/tableimage"
 )
 
@@ -43,7 +45,12 @@ func (t *table) save(path string) {
 	ti.Save()
 }
 
-func (t *table) addRow(name, last, current, delta string) {
+func (t *table) addRow(name string, last, current float64) {
+	deltaColor := "#C82538"
+	if current > last {
+		deltaColor = "#2E7F18"
+	}
+
 	row := tableimage.TR{
 		BorderColor: "#000",
 		Tds: []tableimage.TD{
@@ -52,18 +59,42 @@ func (t *table) addRow(name, last, current, delta string) {
 				Text:  name,
 			},
 			{
-				Color: "#000",
-				Text:  last + "%",
+				Color: getScoreColor(last),
+				Text:  strconv.FormatFloat(last, 'f', 0, 32) + "%",
 			},
 			{
-				Color: "#000",
-				Text:  current + "%",
+				Color: getScoreColor(current),
+				Text:  strconv.FormatFloat(current, 'f', 0, 32) + "%",
 			},
 			{
-				Color: "#000",
-				Text:  delta + "%",
+				Color: deltaColor,
+				Text:  strconv.FormatFloat(current-last, 'f', 0, 32) + "%",
 			},
 		},
 	}
 	t.rows = append(t.rows, row)
+}
+
+func getScoreColor(score float64) string {
+	if score > 83 {
+		return "#2E7F18"
+	}
+
+	if score > 67 {
+		return "#45731E"
+	}
+
+	if score > 50 {
+		return "#675E24"
+	}
+
+	if score > 33 {
+		return "#8D472B"
+	}
+
+	if score > 16 {
+		return "#B13433"
+	}
+
+	return "#C82538"
 }
