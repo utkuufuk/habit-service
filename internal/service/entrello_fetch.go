@@ -22,10 +22,5 @@ func (a FetchHabitsAsTrelloCardsAction) Run(ctx context.Context, client habit.Cl
 		return nil, fmt.Errorf("could not fetch habits: %w", err)
 	}
 
-	// @todo: call this as part of a cron job
-	if err = client.UpdateScores(habits, now); err != nil {
-		return nil, fmt.Errorf("could not update habit scores: %w", err)
-	}
-
 	return entrello.ToCards(habits, now)
 }

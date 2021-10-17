@@ -10,21 +10,16 @@ import (
 )
 
 func main() {
-	cfg, err := config.ReadConfig("config.yml")
-	if err != nil {
-		log.Fatalf("Could not read config variables: %v", err)
-	}
-
 	ctx := context.Background()
-	client, err := habit.GetClient(ctx, cfg.SpreadsheetId, cfg.TimezoneLocation)
+	client, err := habit.GetClient(ctx, config.Values.SpreadsheetId)
 	if err != nil {
 		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
 	}
 
 	action := service.ReportProgressAction{
-		TelegramChatId:   cfg.TelegramChatId,
-		TelegramToken:    cfg.TelegramToken,
-		TimezoneLocation: cfg.TimezoneLocation,
+		TelegramChatId:   config.Values.TelegramChatId,
+		TelegramToken:    config.Values.TelegramToken,
+		TimezoneLocation: config.Values.TimezoneLocation,
 	}
 	message, err := action.Run(ctx, client)
 	if err != nil {

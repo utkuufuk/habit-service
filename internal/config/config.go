@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -28,11 +28,12 @@ type Config struct {
 	TelegramChatId   int64
 }
 
-// ReadConfig reads the YAML config file & decodes all parameters
-func ReadConfig(fileName string) (Config, error) {
-	f, err := os.Open(fileName)
+var Values Config
+
+func init() {
+	f, err := os.Open("config.yml")
 	if err != nil {
-		return Config{}, fmt.Errorf("could not open config file: %w", err)
+		log.Fatalf("could not open config file: %v", err)
 	}
 	defer f.Close()
 
@@ -40,19 +41,19 @@ func ReadConfig(fileName string) (Config, error) {
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&cfg)
 	if err != nil {
-		return Config{}, fmt.Errorf("could not decode config: %w", err)
+		log.Fatalf("could not decode config: %v", err)
 	}
 
 	location, err := time.LoadLocation(cfg.TimezoneLocation)
 	if err != nil {
-		return Config{}, fmt.Errorf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
+		log.Fatalf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
 	}
 
-	return Config{
+	Values = Config{
 		cfg.HttpPort,
 		cfg.SpreadsheetId,
 		location,
 		cfg.Telegram.Token,
 		cfg.Telegram.ChatId,
-	}, nil
+	}
 }

@@ -15,25 +15,19 @@ import (
 )
 
 var (
-	cfg    config.Config
 	client habit.Client
 )
 
 func main() {
 	var err error
-	cfg, err = config.ReadConfig("config.yml")
-	if err != nil {
-		log.Fatalf("Could not read config variables: %v", err)
-	}
-
-	client, err = habit.GetClient(context.Background(), cfg.SpreadsheetId, cfg.TimezoneLocation)
+	client, err = habit.GetClient(context.Background(), config.Values.SpreadsheetId)
 	if err != nil {
 		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
 	}
 
 	http.HandleFunc("/entrello", handleEntrelloRequest)
 	http.HandleFunc("/glados", handleGladosCommand)
-	http.ListenAndServe(fmt.Sprintf(":%d", cfg.HttpPort), nil)
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Values.HttpPort), nil)
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
@@ -43,7 +37,7 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	action := service.FetchHabitsAsTrelloCardsAction{
-		TimezoneLocation: cfg.TimezoneLocation,
+		TimezoneLocation: config.Values.TimezoneLocation,
 	}
 	cards, err := action.Run(req.Context(), client)
 	if err != nil {
@@ -83,7 +77,7 @@ func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	action, err := glados.ParseCommand(request.Args, cfg)
+	action, err := glados.ParseCommand(request.Args, config.Values)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response{fmt.Sprintf("Could not parse Glados command: %v", err)})
