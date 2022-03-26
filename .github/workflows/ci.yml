@@ -22,5 +22,14 @@ jobs:
     - name: Make sure that go.mod has already been tidied
       run: go mod tidy && git diff --no-patch --exit-code
 
+    - name: Build Habit Service
+      run: go build ./cmd/habit-service
+
+    - name: Build Progress Reporter
+      run: go build ./cmd/progress-report
+
+    - name: Build Score Updater
+      run: go build ./cmd/score-update
+
     - name: Run tests
       run: go test ./...

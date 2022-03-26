@@ -1,4 +1,4 @@
-config.yml
+.env
 *.json
 *.rest
 *.png
