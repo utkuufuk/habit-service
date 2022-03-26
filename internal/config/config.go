@@ -1,59 +1,72 @@
 package config
 
 import (
-	"log"
+	"fmt"
 	"os"
+	"strconv"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"github.com/joho/godotenv"
+	"github.com/utkuufuk/habit-service/internal/logger"
 )
 
-type telegram struct {
-	Token  string `yaml:"token"`
-	ChatId int64  `yaml:"chat_id"`
-}
-
-type config struct {
-	HttpPort         int      `yaml:"http_port"`
-	SpreadsheetId    string   `yaml:"spreadsheet_id"`
-	TimezoneLocation string   `yaml:"timezone_location"`
-	Telegram         telegram `yaml:"telegram"`
-}
-
-type Config struct {
-	HttpPort         int
-	SpreadsheetId    string
-	TimezoneLocation *time.Location
-	TelegramToken    string
-	TelegramChatId   int64
-}
-
-var Values Config
+var (
+	AppEnv             string
+	HttpPort           int
+	TimezoneLocation   *time.Location
+	SpreadsheetId      string
+	GoogleClientId     string
+	GoogleClientSecret string
+	GoogleAccessToken  string
+	GoogleRefreshToken string
+	TelegramChatId     int64
+	TelegramToken      string
+)
 
 func init() {
-	f, err := os.Open("config.yml")
-	if err != nil {
-		log.Fatalf("could not open config file: %v", err)
-	}
-	defer f.Close()
+	godotenv.Load()
 
-	var cfg config
-	decoder := yaml.NewDecoder(f)
-	err = decoder.Decode(&cfg)
-	if err != nil {
-		log.Fatalf("could not decode config: %v", err)
+	httpPort := os.Getenv("PORT")
+	if httpPort == "" {
+		httpPort = os.Getenv("HTTP_PORT")
 	}
 
-	location, err := time.LoadLocation(cfg.TimezoneLocation)
+	port, err := strconv.Atoi(httpPort)
 	if err != nil {
-		log.Fatalf("Invalid timezone location: '%s': %v", cfg.TimezoneLocation, err)
+		logger.Error("PORT or HTTP_PORT not set")
+
+		if AppEnv == "production" {
+			os.Exit(1)
+		}
 	}
 
-	Values = Config{
-		cfg.HttpPort,
-		cfg.SpreadsheetId,
-		location,
-		cfg.Telegram.Token,
-		cfg.Telegram.ChatId,
+	location, err := time.LoadLocation(os.Getenv("TIMEZONE_LOCATION"))
+	if err != nil {
+		fmt.Printf(
+			"Invalid timezone location: '%s', falling back to UTC: %v\n",
+			location,
+			err,
+		)
+		location, _ = time.LoadLocation("UTC")
 	}
+
+	chatId, err := strconv.ParseInt(os.Getenv("TELEGRAM_CHAT_ID"), 10, 64)
+	if err != nil {
+		logger.Error("Invalid Telegram Chat ID")
+
+		if AppEnv == "production" {
+			os.Exit(1)
+		}
+	}
+
+	AppEnv = os.Getenv("APP_ENV")
+	HttpPort = port
+	TimezoneLocation = location
+	TelegramChatId = chatId
+	TelegramToken = os.Getenv("TELEGRAM_TOKEN")
+	SpreadsheetId = os.Getenv("SPREADSHEET_ID")
+	GoogleClientId = os.Getenv("GSHEETS_CLIENT_ID")
+	GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
+	GoogleAccessToken = os.Getenv("GSHEETS_ACCESS_TOKEN")
+	GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
 }

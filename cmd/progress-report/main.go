@@ -2,27 +2,24 @@ package main
 
 import (
 	"context"
-	"log"
+	"os"
 
-	"github.com/utkuufuk/habit-service/internal/config"
 	"github.com/utkuufuk/habit-service/internal/habit"
+	"github.com/utkuufuk/habit-service/internal/logger"
 	"github.com/utkuufuk/habit-service/internal/service"
 )
 
 func main() {
 	ctx := context.Background()
-	client, err := habit.GetClient(ctx, config.Values.SpreadsheetId)
+	client, err := habit.GetClient(ctx)
 	if err != nil {
-		log.Fatalf("Could not create gsheets client for Habit Service: %v", err)
+		logger.Error("Could not create gsheets client for Habit Service: %v", err)
+		os.Exit(1)
 	}
 
-	action := service.ReportProgressAction{
-		TelegramChatId:   config.Values.TelegramChatId,
-		TelegramToken:    config.Values.TelegramToken,
-		TimezoneLocation: config.Values.TimezoneLocation,
-	}
-	_, err = action.Run(ctx, client)
+	_, err = service.ReportProgressAction{}.Run(ctx, client)
 	if err != nil {
-		log.Fatalf("Could not run Glados command: %v", err)
+		logger.Error("Could not run Glados command: %v", err)
+		os.Exit(1)
 	}
 }
