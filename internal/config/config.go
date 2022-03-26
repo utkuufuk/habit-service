@@ -26,6 +26,14 @@ var (
 func init() {
 	godotenv.Load()
 
+	AppEnv = os.Getenv("APP_ENV")
+	TelegramToken = os.Getenv("TELEGRAM_TOKEN")
+	SpreadsheetId = os.Getenv("SPREADSHEET_ID")
+	GoogleClientId = os.Getenv("GSHEETS_CLIENT_ID")
+	GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
+	GoogleAccessToken = os.Getenv("GSHEETS_ACCESS_TOKEN")
+	GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
+
 	httpPort := os.Getenv("PORT")
 	if httpPort == "" {
 		httpPort = os.Getenv("HTTP_PORT")
@@ -59,14 +67,7 @@ func init() {
 		}
 	}
 
-	AppEnv = os.Getenv("APP_ENV")
 	HttpPort = port
 	TimezoneLocation = location
 	TelegramChatId = chatId
-	TelegramToken = os.Getenv("TELEGRAM_TOKEN")
-	SpreadsheetId = os.Getenv("SPREADSHEET_ID")
-	GoogleClientId = os.Getenv("GSHEETS_CLIENT_ID")
-	GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
-	GoogleAccessToken = os.Getenv("GSHEETS_ACCESS_TOKEN")
-	GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
 }
