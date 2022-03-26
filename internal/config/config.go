@@ -69,5 +69,4 @@ func init() {
 	GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
 	GoogleAccessToken = os.Getenv("GSHEETS_ACCESS_TOKEN")
 	GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
-	fmt.Println("PORT: ", HttpPort)
 }

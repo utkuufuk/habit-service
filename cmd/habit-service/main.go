@@ -27,9 +27,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	addr := fmt.Sprintf(":%d", config.HttpPort)
+	fmt.Println("ADDR: ", addr)
 	http.HandleFunc("/entrello", handleEntrelloRequest)
 	http.HandleFunc("/glados", handleGladosCommand)
-	http.ListenAndServe(fmt.Sprintf(":%d", config.HttpPort), nil)
+	http.ListenAndServe(addr, nil)
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
