@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/utkuufuk/habit-service/internal/config"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -37,12 +38,12 @@ type cell struct {
 	row int
 }
 
-func GetClient(ctx context.Context, spreadsheetId string) (client Client, err error) {
+func GetClient(ctx context.Context) (client Client, err error) {
 	service, err := initializeService(ctx)
 	if err != nil {
 		return client, fmt.Errorf("could not initialize gsheets service: %w", err)
 	}
-	return Client{spreadsheetId, service.Spreadsheets.Values}, nil
+	return Client{config.SpreadsheetId, service.Spreadsheets.Values}, nil
 }
 
 // FetchHabits retrieves the state of today's habits from the spreadsheet

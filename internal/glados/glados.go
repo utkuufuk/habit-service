@@ -3,17 +3,12 @@ package glados
 import (
 	"fmt"
 
-	"github.com/utkuufuk/habit-service/internal/config"
 	"github.com/utkuufuk/habit-service/internal/service"
 )
 
 func ParseCommand(args []string) (service.Action, error) {
 	if len(args) == 0 {
-		return service.ReportProgressAction{
-			TelegramChatId:   config.TelegramChatId,
-			TelegramToken:    config.TelegramToken,
-			TimezoneLocation: config.TimezoneLocation,
-		}, nil
+		return service.ReportProgressAction{}, nil
 	}
 
 	if args[0] == "mark" && len(args) == 3 {

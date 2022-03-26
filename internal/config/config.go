@@ -11,19 +11,16 @@ import (
 )
 
 var (
-	AppEnv = os.Getenv("APP_ENV")
-
-	HttpPort         int
-	TimezoneLocation *time.Location
-
-	SpreadsheetId      = os.Getenv("SPREADSHEET_ID")
-	GoogleClientId     = os.Getenv("GSHEETS_CLIENT_ID")
-	GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
-	GoogleAccessToken  = os.Getenv("GSHEETS_ACCESS_TOKEN")
-	GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
-
-	TelegramChatId int64
-	TelegramToken  = os.Getenv("TELEGRAM_TOKEN")
+	AppEnv             string
+	HttpPort           int
+	TimezoneLocation   *time.Location
+	SpreadsheetId      string
+	GoogleClientId     string
+	GoogleClientSecret string
+	GoogleAccessToken  string
+	GoogleRefreshToken string
+	TelegramChatId     int64
+	TelegramToken      string
 )
 
 func init() {
@@ -62,7 +59,14 @@ func init() {
 		}
 	}
 
+	AppEnv = os.Getenv("APP_ENV")
 	HttpPort = port
 	TimezoneLocation = location
 	TelegramChatId = chatId
+	TelegramToken = os.Getenv("TELEGRAM_TOKEN")
+	SpreadsheetId = os.Getenv("SPREADSHEET_ID")
+	GoogleClientId = os.Getenv("GSHEETS_CLIENT_ID")
+	GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
+	GoogleAccessToken = os.Getenv("GSHEETS_ACCESS_TOKEN")
+	GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
 }

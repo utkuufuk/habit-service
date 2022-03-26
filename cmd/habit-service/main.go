@@ -21,7 +21,7 @@ var (
 
 func main() {
 	var err error
-	client, err = habit.GetClient(context.Background(), config.SpreadsheetId)
+	client, err = habit.GetClient(context.Background())
 	if err != nil {
 		logger.Error("Could not create gsheets client for Habit Service: %v", err)
 		os.Exit(1)
@@ -38,9 +38,7 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	action := service.FetchHabitsAsTrelloCardsAction{
-		TimezoneLocation: config.TimezoneLocation,
-	}
+	action := service.FetchHabitsAsTrelloCardsAction{}
 	cards, err := action.Run(req.Context(), client)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

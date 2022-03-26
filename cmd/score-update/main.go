@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	client, err := habit.GetClient(context.Background(), config.SpreadsheetId)
+	client, err := habit.GetClient(context.Background())
 	if err != nil {
 		logger.Error("Could not create gsheets client for Habit Service: %v", err)
 		os.Exit(1)
