@@ -33,6 +33,12 @@ func main() {
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
+	// @fixme: make this its own handler, doing the same thing as what handleGladosCommand currently does
+	if req.Method == http.MethodPost {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if req.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
