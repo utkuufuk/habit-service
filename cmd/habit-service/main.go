@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/utkuufuk/habit-service/internal/config"
-	"github.com/utkuufuk/habit-service/internal/glados"
 	"github.com/utkuufuk/habit-service/internal/habit"
 	"github.com/utkuufuk/habit-service/internal/logger"
 	"github.com/utkuufuk/habit-service/internal/service"
@@ -30,7 +29,6 @@ func main() {
 	}
 
 	http.HandleFunc("/entrello", handleEntrelloRequest)
-	// http.HandleFunc("/glados", handleGladosCommand)
 	http.ListenAndServe(fmt.Sprintf(":%d", config.HttpPort), nil)
 }
 
@@ -62,14 +60,11 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 				Name string `json:"name"`
 			} `json:"labels"`
 		}
-		// var card interface{}
 		if err = json.Unmarshal(body, &card); err != nil {
 			logger.Warn("Invalid request body: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		// logger.Info("Card: %v", card)
-		logger.Info("Desc: %s\nLabels: %v", card.Desc, card.Labels)
 
 		cell := strings.Split(card.Desc, "\n")[0]
 		matched, err := regexp.MatchString(`[a-zA-Z]{3} 202\d![A-Z][1-9][0-9]?$|^100$`, cell)
@@ -79,53 +74,29 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		logger.Info("Cell: %s", cell)
+		symbol := "✔"
+		for _, c := range card.Labels {
+			if c.Name == "habit-skip" {
+				symbol = "–"
+				break
+			}
+			if c.Name == "habit-fail" {
+				symbol = "✘"
+				break
+			}
+		}
+
+		_, err = service.MarkHabitAction{Cell: cell, Symbol: symbol}.Run(req.Context(), client)
+		if err != nil {
+			logger.Error("Could not mark habit at cell '%s' as %s: %v", cell, symbol, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		return
 	}
 
 	w.WriteHeader(http.StatusMethodNotAllowed)
 	return
-}
-
-func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	type response struct {
-		Message string `json:"message"`
-	}
-	w.Header().Set("Content-Type", "application/json")
-
-	body, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response{fmt.Sprintf("Could not read HTTP request body: %v", err)})
-		return
-	}
-
-	var request struct {
-		Args []string `json:"args"`
-	}
-	if err = json.Unmarshal(body, &request); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response{fmt.Sprintf("Could not decode HTTP request body: %v", err)})
-		return
-	}
-
-	action, err := glados.ParseCommand(request.Args)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response{fmt.Sprintf("Could not parse Glados command: %v", err)})
-		return
-	}
-
-	message, err := action.Run(req.Context(), client)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response{err.Error()})
-		return
-	}
-
-	json.NewEncoder(w).Encode(response{message})
 }
