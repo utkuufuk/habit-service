@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/utkuufuk/habit-service/internal/config"
 	"github.com/utkuufuk/habit-service/internal/glados"
@@ -28,32 +30,56 @@ func main() {
 	}
 
 	http.HandleFunc("/entrello", handleEntrelloRequest)
-	http.HandleFunc("/glados", handleGladosCommand)
+	// http.HandleFunc("/glados", handleGladosCommand)
 	http.ListenAndServe(fmt.Sprintf(":%d", config.HttpPort), nil)
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
-	// @fixme: make this its own handler, doing the same thing as what handleGladosCommand currently does
+	if req.Method == http.MethodGet {
+		action := service.FetchHabitsAsTrelloCardsAction{}
+		cards, err := action.Run(req.Context(), client)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(cards)
+	}
+
 	if req.Method == http.MethodPost {
-		w.WriteHeader(http.StatusOK)
-		return
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			logger.Error("Could not read request body: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		var card struct {
+			Desc   string   `json:"desc"`
+			Labels []string `json:"labels"`
+		}
+		if err = json.Unmarshal(body, &card); err != nil {
+			logger.Warn("Invalid request body: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		logger.Info("Desc: %s\nLabels: %v", card.Desc, card.Labels)
+
+		cell := strings.Split(card.Desc, "\n")[0]
+		matched, err := regexp.MatchString(`[a-zA-Z]{3} 202\d![A-Z][1-9][0-9]?$|^100$`, cell)
+		if err != nil || matched == false {
+			logger.Error("Invalid cell name '%s' in card description: %v", cell, err)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
+
+		logger.Info("Cell: %s", cell)
 	}
 
-	if req.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	action := service.FetchHabitsAsTrelloCardsAction{}
-	cards, err := action.Run(req.Context(), client)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cards)
+	w.WriteHeader(http.StatusMethodNotAllowed)
+	return
 }
 
 func handleGladosCommand(w http.ResponseWriter, req *http.Request) {
