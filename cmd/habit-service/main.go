@@ -57,14 +57,18 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 		}
 
 		var card struct {
-			Desc   string   `json:"desc"`
-			Labels []string `json:"labels"`
+			Desc   string `json:"desc"`
+			Labels []struct {
+				Name string `json:"name"`
+			} `json:"labels"`
 		}
+		// var card interface{}
 		if err = json.Unmarshal(body, &card); err != nil {
 			logger.Warn("Invalid request body: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// logger.Info("Card: %v", card)
 		logger.Info("Desc: %s\nLabels: %v", card.Desc, card.Labels)
 
 		cell := strings.Split(card.Desc, "\n")[0]
