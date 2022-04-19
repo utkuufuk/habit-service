@@ -1,4 +1,4 @@
-name: habit-service
+name: CI
 on:
   push:
 jobs:

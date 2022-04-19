@@ -1,0 +1,73 @@
+before:
+  hooks:
+    - go mod download
+
+builds:
+- id: habit-service
+  main: ./cmd/habit-service
+  binary: habit-service
+  env:
+  - CGO_ENABLED=0
+  goos:
+    - linux
+    - darwin
+    - windows
+  goarch:
+    - amd64
+    - arm
+    - arm64
+  goarm: [6, 7]
+
+- id: progress-report
+  main: ./cmd/progress-report
+  binary: progress-report
+  env:
+  - CGO_ENABLED=0
+  goos:
+    - linux
+    - darwin
+    - windows
+  goarch:
+    - amd64
+    - arm
+    - arm64
+  goarm: [6, 7]
+
+- id: score-update
+  main: ./cmd/score-update
+  binary: score-update
+  env:
+  - CGO_ENABLED=0
+  goos:
+    - linux
+    - darwin
+    - windows
+  goarch:
+    - amd64
+    - arm
+    - arm64
+  goarm: [6, 7]
+
+archives:
+- id: habit-service-archive
+  name_template: |-
+    habit_service_{{ .Tag }}_{{ .Os }}_{{ .Arch -}}
+    {{- with .Arm -}}
+      {{- if (eq . "6") -}}hf
+      {{- else -}}v{{- . -}}
+      {{- end -}}
+    {{- end -}}
+  builds:
+    - habit-service
+    - progress-report
+    - score-update
+  replacements:
+    386: i386
+    amd64: x86_64
+  format_overrides:
+    - goos: windows
+      format: zip
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
