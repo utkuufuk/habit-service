@@ -1,7 +1,6 @@
 .editorconfig
 .env.example
 .gitignore
-.goreleaser
 Dockerfile
 LICENSE
 Procfile
