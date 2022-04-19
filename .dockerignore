@@ -1,0 +1,12 @@
+.editorconfig
+.env.example
+.gitignore
+.goreleaser
+Dockerfile
+LICENSE
+Procfile
+*.yml
+*.json
+*.md
+/.git
+/.github

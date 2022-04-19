@@ -1,0 +1,41 @@
+before:
+  hooks:
+    - go mod download
+
+builds:
+- id: habit-service
+  main: ./cmd/habit-service
+  binary: habit-service
+  env:
+  - CGO_ENABLED=0
+  goos:
+    - linux
+    - darwin
+    - windows
+  goarch:
+    - amd64
+    - arm
+    - arm64
+  goarm: [6, 7]
+
+archives:
+- id: habit-service-archive
+  name_template: |-
+    habit_service_{{ .Tag }}_{{ .Os }}_{{ .Arch -}}
+    {{- with .Arm -}}
+      {{- if (eq . "6") -}}hf
+      {{- else -}}v{{- . -}}
+      {{- end -}}
+    {{- end -}}
+  builds:
+    - habit-service
+  replacements:
+    386: i386
+    amd64: x86_64
+  format_overrides:
+    - goos: windows
+      format: zip
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
