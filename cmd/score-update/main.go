@@ -11,13 +11,14 @@ import (
 )
 
 func main() {
-	client, err := habit.GetClient(context.Background())
+	loc, cfg := config.ParseCommonConfig()
+	client, err := habit.GetClient(context.Background(), cfg)
 	if err != nil {
 		logger.Error("Could not create gsheets client for Habit Service: %v", err)
 		os.Exit(1)
 	}
 
-	now := time.Now().In(config.TimezoneLocation)
+	now := time.Now().In(loc)
 	habits, err := client.FetchHabits(now)
 	if err != nil {
 		logger.Error("could not fetch habits: %v", err)
