@@ -11,11 +11,11 @@ import (
 )
 
 type GoogleSheetsConfig struct {
-	SpreadsheetId      string
 	GoogleClientId     string
 	GoogleClientSecret string
 	GoogleAccessToken  string
 	GoogleRefreshToken string
+	SpreadsheetId      string
 }
 
 type ServerConfig struct {
