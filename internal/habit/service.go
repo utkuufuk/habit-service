@@ -17,10 +17,10 @@ const (
 	tokenUrl    = "https://oauth2.googleapis.com/token"
 )
 
-func initializeService(ctx context.Context) (service *sheets.Service, err error) {
+func initService(ctx context.Context, cfg config.GoogleSheetsConfig) (service *sheets.Service, err error) {
 	auth := &oauth2.Config{
-		ClientID:     config.GoogleClientId,
-		ClientSecret: config.GoogleClientSecret,
+		ClientID:     cfg.GoogleClientId,
+		ClientSecret: cfg.GoogleClientSecret,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  authUrl,
 			TokenURL: tokenUrl,
@@ -30,9 +30,9 @@ func initializeService(ctx context.Context) (service *sheets.Service, err error)
 	}
 
 	token := &oauth2.Token{
-		AccessToken:  config.GoogleAccessToken,
+		AccessToken:  cfg.GoogleAccessToken,
 		TokenType:    "Bearer",
-		RefreshToken: config.GoogleRefreshToken,
+		RefreshToken: cfg.GoogleRefreshToken,
 		Expiry:       time.Now(),
 	}
 	if err != nil {

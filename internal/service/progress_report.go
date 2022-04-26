@@ -9,22 +9,25 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/utkuufuk/habit-service/internal/config"
 	"github.com/utkuufuk/habit-service/internal/habit"
 	"github.com/utkuufuk/habit-service/internal/tableimage"
 )
 
-type ReportProgressAction struct{}
+type ReportProgressAction struct {
+	TelegramChatId   int64
+	TelegramToken    string
+	TimezoneLocation *time.Location
+}
 
 func (a ReportProgressAction) Run(ctx context.Context, client habit.Client) (string, error) {
-	now := time.Now().In(config.TimezoneLocation)
+	now := time.Now().In(a.TimezoneLocation)
 	currentHabits, err := client.FetchHabits(now)
 	if err != nil {
 		return "", fmt.Errorf("could not fetch this month's habits: %w\n", err)
 	}
 
 	year, month, _ := now.Date()
-	lastMonth := time.Date(year, month, 1, 0, 0, 0, 0, config.TimezoneLocation).Add(-time.Nanosecond)
+	lastMonth := time.Date(year, month, 1, 0, 0, 0, 0, a.TimezoneLocation).Add(-time.Nanosecond)
 	previousHabits, err := client.FetchHabits(lastMonth)
 	if err != nil {
 		return "", fmt.Errorf("could not fetch habits from last month: %w\n", err)
@@ -46,7 +49,7 @@ func (a ReportProgressAction) Run(ctx context.Context, client habit.Client) (str
 }
 
 func (a ReportProgressAction) sendProgressReport(path string) error {
-	bot, err := tgbotapi.NewBotAPI(config.TelegramToken)
+	bot, err := tgbotapi.NewBotAPI(a.TelegramToken)
 	if err != nil {
 		return fmt.Errorf("could not initialize Telegram bot client: %w", err)
 	}
@@ -56,7 +59,7 @@ func (a ReportProgressAction) sendProgressReport(path string) error {
 		return fmt.Errorf("could not read progress report image '%s': %w", path, err)
 	}
 
-	_, err = bot.Send(tgbotapi.NewPhotoUpload(config.TelegramChatId, tgbotapi.FileBytes{
+	_, err = bot.Send(tgbotapi.NewPhotoUpload(a.TelegramChatId, tgbotapi.FileBytes{
 		Name:  "picture",
 		Bytes: photoBytes,
 	}))

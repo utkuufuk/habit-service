@@ -38,12 +38,12 @@ type cell struct {
 	row int
 }
 
-func GetClient(ctx context.Context) (client Client, err error) {
-	service, err := initializeService(ctx)
+func GetClient(ctx context.Context, cfg config.GoogleSheetsConfig) (client Client, err error) {
+	service, err := initService(ctx, cfg)
 	if err != nil {
 		return client, fmt.Errorf("could not initialize gsheets service: %w", err)
 	}
-	return Client{config.SpreadsheetId, service.Spreadsheets.Values}, nil
+	return Client{cfg.SpreadsheetId, service.Spreadsheets.Values}, nil
 }
 
 // FetchHabits retrieves the state of today's habits from the spreadsheet

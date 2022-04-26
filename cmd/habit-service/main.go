@@ -17,24 +17,40 @@ import (
 )
 
 var (
+	cfg    config.ServerConfig
 	client habit.Client
 )
 
-func main() {
+func init() {
 	var err error
-	client, err = habit.GetClient(context.Background())
+	cfg, err = config.ParseServerConfig()
+	if err != nil {
+		logger.Error("Failed to parse server config: %v", err)
+		os.Exit(1)
+	}
+
+	client, err = habit.GetClient(context.Background(), cfg.GoogleSheets)
 	if err != nil {
 		logger.Error("Could not create gsheets client for Habit Service: %v", err)
 		os.Exit(1)
 	}
+}
 
+func main() {
 	http.HandleFunc("/entrello", handleEntrelloRequest)
-	http.ListenAndServe(fmt.Sprintf(":%d", config.HttpPort), nil)
+	http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil)
 }
 
 func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
+	if cfg.Secret != "" && req.Header.Get("X-Api-Key") != cfg.Secret {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	if req.Method == http.MethodGet {
-		action := service.FetchHabitsAsTrelloCardsAction{}
+		action := service.FetchHabitsAsTrelloCardsAction{
+			TimezoneLocation: cfg.TimezoneLocation,
+		}
 		cards, err := action.Run(req.Context(), client)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

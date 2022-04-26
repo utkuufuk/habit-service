@@ -10,64 +10,78 @@ import (
 	"github.com/utkuufuk/habit-service/internal/logger"
 )
 
-var (
-	AppEnv             string
-	HttpPort           int
-	TimezoneLocation   *time.Location
-	SpreadsheetId      string
+type GoogleSheetsConfig struct {
 	GoogleClientId     string
 	GoogleClientSecret string
 	GoogleAccessToken  string
 	GoogleRefreshToken string
-	TelegramChatId     int64
-	TelegramToken      string
-)
+	SpreadsheetId      string
+}
 
-func init() {
+type ServerConfig struct {
+	TimezoneLocation *time.Location
+	GoogleSheets     GoogleSheetsConfig
+	Port             int
+	Secret           string
+}
+
+type ProgressReportConfig struct {
+	TimezoneLocation *time.Location
+	GoogleSheets     GoogleSheetsConfig
+	TelegramChatId   int64
+	TelegramToken    string
+}
+
+func ParseCommonConfig() (loc *time.Location, cfg GoogleSheetsConfig) {
 	godotenv.Load()
 
-	AppEnv = os.Getenv("APP_ENV")
-	TelegramToken = os.Getenv("TELEGRAM_TOKEN")
-	SpreadsheetId = os.Getenv("SPREADSHEET_ID")
-	GoogleClientId = os.Getenv("GSHEETS_CLIENT_ID")
-	GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
-	GoogleAccessToken = os.Getenv("GSHEETS_ACCESS_TOKEN")
-	GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
+	cfg.SpreadsheetId = os.Getenv("SPREADSHEET_ID")
+	cfg.GoogleClientId = os.Getenv("GSHEETS_CLIENT_ID")
+	cfg.GoogleClientSecret = os.Getenv("GSHEETS_CLIENT_SECRET")
+	cfg.GoogleAccessToken = os.Getenv("GSHEETS_ACCESS_TOKEN")
+	cfg.GoogleRefreshToken = os.Getenv("GSHEETS_REFRESH_TOKEN")
 
-	httpPort := os.Getenv("PORT")
-	if httpPort == "" {
-		httpPort = os.Getenv("HTTP_PORT")
-	}
-
-	port, err := strconv.Atoi(httpPort)
+	loc, err := time.LoadLocation(os.Getenv("TIMEZONE_LOCATION"))
 	if err != nil {
-		logger.Error("PORT or HTTP_PORT not set")
-
-		if AppEnv == "production" {
-			os.Exit(1)
-		}
-	}
-
-	location, err := time.LoadLocation(os.Getenv("TIMEZONE_LOCATION"))
-	if err != nil {
-		fmt.Printf(
+		logger.Warn(
 			"Invalid timezone location: '%s', falling back to UTC: %v\n",
-			location,
+			os.Getenv("TIMEZONE_LOCATION"),
 			err,
 		)
-		location, _ = time.LoadLocation("UTC")
+		loc, _ = time.LoadLocation("UTC")
 	}
+
+	return loc, cfg
+}
+
+func ParseServerConfig() (cfg ServerConfig, err error) {
+	loc, common := ParseCommonConfig()
+
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+	if err != nil {
+		return cfg, fmt.Errorf("PORT not set")
+	}
+
+	return ServerConfig{
+		loc,
+		common,
+		port,
+		os.Getenv("SECRET"),
+	}, nil
+}
+
+func ParseProgressReportConfig() (cfg ProgressReportConfig, err error) {
+	loc, common := ParseCommonConfig()
 
 	chatId, err := strconv.ParseInt(os.Getenv("TELEGRAM_CHAT_ID"), 10, 64)
 	if err != nil {
-		logger.Error("Invalid Telegram Chat ID")
-
-		if AppEnv == "production" {
-			os.Exit(1)
-		}
+		return cfg, fmt.Errorf("Invalid Telegram Chat ID")
 	}
 
-	HttpPort = port
-	TimezoneLocation = location
-	TelegramChatId = chatId
+	return ProgressReportConfig{
+		loc,
+		common,
+		chatId,
+		os.Getenv("TELEGRAM_TOKEN"),
+	}, nil
 }
