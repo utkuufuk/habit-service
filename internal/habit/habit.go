@@ -1,14 +1,12 @@
 package habit
 
 import (
-	"context"
 	"fmt"
 	"math"
-	"strings"
+	"regexp"
 	"time"
 
-	"github.com/utkuufuk/habit-service/internal/config"
-	"google.golang.org/api/sheets/v4"
+	"github.com/utkuufuk/habit-service/internal/sheets"
 )
 
 const (
@@ -17,79 +15,70 @@ const (
 	dataRowIdx    = 2 // number of rows before the first data row starts in the spreadsheet
 	dataColumnIdx = 1 // number of columns before the first data column starts in the spreadsheet
 
-	symbolDone    = "✔"
-	symbolFailed  = "✘"
-	symbolSkipped = "–"
+	SymbolDone = "✔"
+	SymbolFail = "✘"
+	SymbolSkip = "–"
 )
 
-type Client struct {
-	spreadsheetId string
-	service       *sheets.SpreadsheetsValuesService
-}
-
 type Habit struct {
-	CellName string
-	State    string
-	Score    float64
+	Cell  sheets.Range
+	State string
+	Score float64
 }
 
-type cell struct {
-	col string
-	row int
-}
-
-func GetClient(ctx context.Context, cfg config.GoogleSheetsConfig) (client Client, err error) {
-	service, err := initService(ctx, cfg)
+// FetchAll retrieves the state of habits from the spreadsheet as of the selected date
+func FetchAll(client sheets.Client, date time.Time) (map[string]Habit, error) {
+	rng, err := sheets.GetRange(
+		getSheetName(date),
+		sheets.Cell{Col: "A", Row: 1},
+		sheets.Cell{Col: "Z", Row: date.Day() + dataRowIdx},
+	)
 	if err != nil {
-		return client, fmt.Errorf("could not initialize gsheets service: %w", err)
-	}
-	return Client{cfg.SpreadsheetId, service.Spreadsheets.Values}, nil
-}
-
-// FetchHabits retrieves the state of today's habits from the spreadsheet
-func (c Client) FetchHabits(now time.Time) (map[string]Habit, error) {
-	rangeName, err := getRangeName(now, cell{"A", 1}, cell{"Z", now.Day() + dataRowIdx})
-	if err != nil {
-		return nil, fmt.Errorf("could not get range name: %w", err)
+		return nil, fmt.Errorf("could not get spreadsheet range: %w", err)
 	}
 
-	rows, err := c.readCells(rangeName)
+	rows, err := client.ReadCells(rng)
 	if err != nil {
 		return nil, fmt.Errorf("could not read cells: %w", err)
 	}
 
-	return mapHabits(rows, now)
+	return parseHabitMap(rows, date)
 }
 
-func (c Client) MarkHabit(cellName string, symbol string) error {
-	values := make([][]interface{}, 1)
-	values[0] = make([]interface{}, 1)
-	values[0][0] = symbol
-	return c.writeCells(values, cellName)
+// Mark marks the habit with the given cell as done/failed/skipped
+func Mark(client sheets.Client, cell, symbol string) error {
+	ok, err := regexp.MatchString(`[a-zA-Z]{3} 202\d![A-Z]([1-9]|[1-3][0-9])$`, cell)
+	if err != nil || ok == false {
+		return fmt.Errorf("invalid cell name '%s': %w", cell, err)
+	}
+
+	if symbol != SymbolDone && symbol != SymbolFail && symbol != SymbolSkip {
+		return fmt.Errorf("invalid symbol '%s' to mark habit", symbol)
+	}
+
+	if err := client.WriteCell(cell, symbol); err != nil {
+		return fmt.Errorf("could not write symbol '%s' to cell '%s': %w", symbol, cell, err)
+	}
+
+	return nil
 }
 
-func IsValidMarkSymbol(symbol string) bool {
-	return symbol == symbolDone || symbol == symbolFailed || symbol == symbolSkipped
-}
-
-func (c Client) UpdateScores(habits map[string]Habit, now time.Time) error {
-	// map habit scores into a slice ordered by column
+// WriteScores (re)writes the scores of the given habits in the spreadsheet
+func WriteScores(client sheets.Client, date time.Time, habits []Habit) error {
 	scores := make([]float64, len(habits))
-	var cellNameComponents []string
 	for _, habit := range habits {
-		cellNameComponents = strings.Split(habit.CellName, "!")
-		col := []rune(cellNameComponents[1][0:1])[0]
-		idx := int(col) - int('A') - 1
+		idx := habit.Cell.GetStartColumnIndex()
 		scores[idx] = habit.Score
 	}
 
-	// get range name to write habit scores in the sheet
 	row := scoreRowIdx + 1
-	firstCol := string(rune(int('A') + dataColumnIdx))
-	lastCol := string(rune(int('A') + len(habits)))
-	rangeName, err := getRangeName(now, cell{firstCol, row}, cell{lastCol, row})
+	scoreRowRange, err := sheets.GetRange(
+		getSheetName(date),
+		sheets.Cell{Col: string(rune(int('A') + dataColumnIdx)), Row: row},
+		sheets.Cell{Col: string(rune(int('A') + len(habits))), Row: row},
+	)
 	if err != nil {
-		return fmt.Errorf("could not get range name: %w", err)
+		return fmt.Errorf("could not get score row range: %w", err)
 	}
 
 	values := make([][]interface{}, 1)
@@ -97,38 +86,23 @@ func (c Client) UpdateScores(habits map[string]Habit, now time.Time) error {
 	for i, score := range scores {
 		values[0][i] = score
 	}
-	return c.writeCells(values, rangeName)
+	return client.WriteCells(values, scoreRowRange)
 }
 
-// readCells reads a range of cell values with the given range
-func (c Client) readCells(rangeName string) ([][]interface{}, error) {
-	resp, err := c.service.Get(c.spreadsheetId, rangeName).Do()
-	if err != nil {
-		return nil, fmt.Errorf("could not read cells: %w", err)
-	}
-	return resp.Values, nil
+// getSheetName gets the sheet name corresponding to the given date
+func getSheetName(date time.Time) string {
+	month := date.Month().String()[:3]
+	year := date.Year()
+	return fmt.Sprintf("%s %d", month, year)
 }
 
-// writeCells writes a 2D array of values into a range of cells
-func (c Client) writeCells(values [][]interface{}, rangeName string) error {
-	_, err := c.service.
-		Update(c.spreadsheetId, rangeName, &sheets.ValueRange{Values: values}).
-		ValueInputOption("USER_ENTERED").
-		Do()
-
-	if err != nil {
-		return fmt.Errorf("could not write cells: %w", err)
-	}
-	return nil
-}
-
-// mapHabits creates a map of habits for given a date and a spreadsheet row data
-func mapHabits(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
+// parseHabitMap parses a map of habits from spreadsheet row data for the given date
+func parseHabitMap(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
 	habits := make(map[string]Habit)
 	for col := dataColumnIdx; col < len(rows[0]); col++ {
-		// evaluate the habit's cell name for today
-		c := cell{string(rune('A' + col)), date.Day() + dataRowIdx}
-		cellName, err := getRangeName(date, c, c)
+		// evaluate the habit's cell name the selected date
+		c := sheets.Cell{Col: string(rune('A' + col)), Row: date.Day() + dataRowIdx}
+		cell, err := sheets.GetRange(getSheetName(date), c, c)
 		if err != nil {
 			return nil, err
 		}
@@ -154,11 +128,11 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
 			}
 
 			val := rows[row][col]
-			if val == symbolDone {
+			if val == SymbolDone {
 				nom++
 			}
 
-			if val == symbolSkipped {
+			if val == SymbolSkip {
 				denom--
 			}
 		}
@@ -167,28 +141,7 @@ func mapHabits(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
 			score = 0
 		}
 
-		habits[name] = Habit{cellName, state, score}
+		habits[name] = Habit{cell, state, score}
 	}
 	return habits, nil
-}
-
-// getRangeName gets the range name given a date and start & end cells
-func getRangeName(date time.Time, start, end cell) (string, error) {
-	if start.col < "A" || start.col > "Z" || start.row <= 0 {
-		return "", fmt.Errorf("invalid start cell: %s%d", start.col, start.row)
-	}
-
-	month := date.Month().String()[:3]
-	year := date.Year()
-
-	// assume single cell if no end date specified
-	if end.col == "" || end.row == 0 || (end.col == start.col && end.row == start.row) {
-		return fmt.Sprintf("%s %d!%s%d", month, year, start.col, start.row), nil
-	}
-
-	if end.col < "A" || end.col > "Z" || end.row <= 0 {
-		return "", fmt.Errorf("invalid end cell: %s%d", end.col, end.row)
-	}
-
-	return fmt.Sprintf("%s %d!%s%d:%s%d", month, year, start.col, start.row, end.col, end.row), nil
 }

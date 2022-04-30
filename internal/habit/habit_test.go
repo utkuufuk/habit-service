@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestMapHabits(t *testing.T) {
+func TestParseHabitMap(t *testing.T) {
 	any := "."
 
 	tt := []struct {
@@ -101,103 +101,13 @@ func TestMapHabits(t *testing.T) {
 				}
 			}
 
-			habits, err := mapHabits(data, date)
+			habits, err := parseHabitMap(data, date)
 			if same := (err == nil && tc.err == nil) || tc.err != nil && err != nil; !same {
 				t.Fatalf("want '%v', got '%v'", tc.err, err)
 			}
 
 			if diff := cmp.Diff(habits, tc.out); diff != "" {
 				t.Errorf("output diff: %s", diff)
-			}
-		})
-	}
-}
-
-func TestGetRangeName(t *testing.T) {
-	tt := []struct {
-		name  string
-		year  int
-		month int
-		start cell
-		end   cell
-		out   string
-		err   error
-	}{
-		{
-			name:  "invalid start col",
-			year:  2020,
-			month: 1,
-			start: cell{"", 1},
-			end:   cell{},
-			err:   errors.New(""),
-		},
-		{
-			name:  "invalid start row",
-			year:  2020,
-			month: 1,
-			start: cell{"A", 0},
-			end:   cell{},
-			err:   errors.New(""),
-		},
-		{
-			name:  "invalid end col",
-			year:  2020,
-			month: 1,
-			start: cell{"A", 1},
-			end:   cell{"0", 1},
-			err:   errors.New(""),
-		},
-		{
-			name:  "invalid end row",
-			year:  2020,
-			month: 1,
-			start: cell{"A", 1},
-			end:   cell{"A", -1},
-			err:   errors.New(""),
-		},
-		{
-			name:  "implicit single cell",
-			year:  2020,
-			month: 1,
-			start: cell{"A", 1},
-			end:   cell{},
-			out:   "Jan 2020!A1",
-			err:   nil,
-		},
-		{
-			name:  "explicit single cell",
-			year:  2020,
-			month: 1,
-			start: cell{"A", 1},
-			end:   cell{"A", 1},
-			out:   "Jan 2020!A1",
-			err:   nil,
-		},
-		{
-			name:  "valid range",
-			year:  2020,
-			month: 1,
-			start: cell{"B", 3},
-			end:   cell{"D", 5},
-			out:   "Jan 2020!B3:D5",
-			err:   nil,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			date := time.Date(tc.year, time.Month(tc.month), 1, 0, 0, 0, 0, time.UTC)
-			out, err := getRangeName(date, tc.start, tc.end)
-			if same := (err == nil && tc.err == nil) || tc.err != nil && err != nil; !same {
-				t.Fatalf("want '%v', got '%v'", tc.err, err)
-			}
-
-			if err == nil {
-				return
-			}
-
-			if out != tc.out {
-				t.Fatalf("range name mismatch; want '%s', got '%s'", tc.out, out)
 			}
 		})
 	}

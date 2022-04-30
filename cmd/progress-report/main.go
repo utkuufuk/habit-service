@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/utkuufuk/habit-service/internal/config"
-	"github.com/utkuufuk/habit-service/internal/habit"
 	"github.com/utkuufuk/habit-service/internal/logger"
 	"github.com/utkuufuk/habit-service/internal/service"
+	"github.com/utkuufuk/habit-service/internal/sheets"
 )
 
 func main() {
@@ -18,21 +18,19 @@ func main() {
 	}
 
 	ctx := context.Background()
-	client, err := habit.GetClient(ctx, cfg.GoogleSheets)
+	client, err := sheets.GetClient(ctx, cfg.GoogleSheets)
 	if err != nil {
 		logger.Error("Could not create gsheets client for Habit Service: %v", err)
 		os.Exit(1)
 	}
 
-	action := service.ReportProgressAction{
-		TimezoneLocation: cfg.TimezoneLocation,
-		SkipList:         cfg.SkipList,
-		TelegramChatId:   cfg.TelegramChatId,
-		TelegramToken:    cfg.TelegramToken,
-	}
-
-	_, err = action.Run(ctx, client)
-	if err != nil {
+	if err = service.ReportProgress(
+		client,
+		cfg.TimezoneLocation,
+		cfg.SkipList,
+		cfg.TelegramChatId,
+		cfg.TelegramToken,
+	); err != nil {
 		logger.Error("Could not run Glados command: %v", err)
 		os.Exit(1)
 	}
