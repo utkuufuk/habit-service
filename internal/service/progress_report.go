@@ -11,12 +11,14 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/utkuufuk/habit-service/internal/habit"
 	"github.com/utkuufuk/habit-service/internal/tableimage"
+	"golang.org/x/exp/slices"
 )
 
 type ReportProgressAction struct {
+	TimezoneLocation *time.Location
+	SkipList         []string
 	TelegramChatId   int64
 	TelegramToken    string
-	TimezoneLocation *time.Location
 }
 
 func (a ReportProgressAction) Run(ctx context.Context, client habit.Client) (string, error) {
@@ -35,6 +37,10 @@ func (a ReportProgressAction) Run(ctx context.Context, client habit.Client) (str
 
 	table := newTable()
 	for name, habit := range currentHabits {
+		if slices.Contains(a.SkipList, name) {
+			continue
+		}
+
 		table.addRow(name, previousHabits[name].Score*100, habit.Score*100)
 	}
 

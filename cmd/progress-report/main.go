@@ -25,9 +25,10 @@ func main() {
 	}
 
 	action := service.ReportProgressAction{
+		TimezoneLocation: cfg.TimezoneLocation,
+		SkipList:         cfg.SkipList,
 		TelegramChatId:   cfg.TelegramChatId,
 		TelegramToken:    cfg.TelegramToken,
-		TimezoneLocation: cfg.TimezoneLocation,
 	}
 
 	_, err = action.Run(ctx, client)

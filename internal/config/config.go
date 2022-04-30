@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -19,15 +20,16 @@ type GoogleSheetsConfig struct {
 }
 
 type ServerConfig struct {
-	TimezoneLocation *time.Location
 	GoogleSheets     GoogleSheetsConfig
+	TimezoneLocation *time.Location
 	Port             int
 	Secret           string
 }
 
 type ProgressReportConfig struct {
-	TimezoneLocation *time.Location
 	GoogleSheets     GoogleSheetsConfig
+	TimezoneLocation *time.Location
+	SkipList         []string
 	TelegramChatId   int64
 	TelegramToken    string
 }
@@ -63,8 +65,8 @@ func ParseServerConfig() (cfg ServerConfig, err error) {
 	}
 
 	return ServerConfig{
-		loc,
 		common,
+		loc,
 		port,
 		os.Getenv("SECRET"),
 	}, nil
@@ -79,8 +81,9 @@ func ParseProgressReportConfig() (cfg ProgressReportConfig, err error) {
 	}
 
 	return ProgressReportConfig{
-		loc,
 		common,
+		loc,
+		strings.Split(os.Getenv("PROGRESS_REPORT_SKIP_LIST"), ","),
 		chatId,
 		os.Getenv("TELEGRAM_TOKEN"),
 	}, nil
