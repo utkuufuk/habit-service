@@ -30,8 +30,5 @@ jobs:
     - name: Build Progress Reporter
       run: go build ./cmd/progress-report
 
-    - name: Build Score Updater
-      run: go build ./cmd/score-update
-
     - name: Run tests
       run: go test ./...
