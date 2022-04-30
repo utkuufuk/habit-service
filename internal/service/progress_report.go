@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,52 +9,52 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/utkuufuk/habit-service/internal/habit"
+	"github.com/utkuufuk/habit-service/internal/sheets"
 	"github.com/utkuufuk/habit-service/internal/tableimage"
 	"golang.org/x/exp/slices"
 )
 
-type ReportProgressAction struct {
-	TimezoneLocation *time.Location
-	SkipList         []string
-	TelegramChatId   int64
-	TelegramToken    string
-}
-
-func (a ReportProgressAction) Run(ctx context.Context, client habit.Client) (string, error) {
-	now := time.Now().In(a.TimezoneLocation)
-	currentHabits, err := client.FetchHabits(now)
+func ReportProgress(
+	client sheets.Client,
+	loc *time.Location,
+	skipList []string,
+	telegramChatId int64,
+	telegramToken string,
+) error {
+	now := time.Now().In(loc)
+	thisMonthHabits, err := habit.FetchAll(client, now)
 	if err != nil {
-		return "", fmt.Errorf("could not fetch this month's habits: %w\n", err)
+		return fmt.Errorf("could not fetch this month's habits: %w\n", err)
 	}
 
 	year, month, _ := now.Date()
-	lastMonth := time.Date(year, month, 1, 0, 0, 0, 0, a.TimezoneLocation).Add(-time.Nanosecond)
-	previousHabits, err := client.FetchHabits(lastMonth)
+	endOfLastMonth := time.Date(year, month, 1, 0, 0, 0, 0, loc).Add(-time.Nanosecond)
+	lastMonthHabits, err := habit.FetchAll(client, endOfLastMonth)
 	if err != nil {
-		return "", fmt.Errorf("could not fetch habits from last month: %w\n", err)
+		return fmt.Errorf("could not fetch habits from last month: %w\n", err)
 	}
 
 	table := newTable()
-	for name, habit := range currentHabits {
-		if slices.Contains(a.SkipList, name) {
+	for name, habit := range thisMonthHabits {
+		if slices.Contains(skipList, name) {
 			continue
 		}
 
-		table.addRow(name, previousHabits[name].Score*100, habit.Score*100)
+		table.addRow(name, lastMonthHabits[name].Score*100, habit.Score*100)
 	}
 
 	path := fmt.Sprintf("./progress-report-%s.png", now.Format("2006-01-02T15:04:05"))
 	table.save(path)
-	err = a.sendProgressReport(path)
+	err = sendProgressReport(path, telegramChatId, telegramToken)
 	if err != nil {
-		return "", fmt.Errorf("could not send progress report: %w\n", err)
+		return fmt.Errorf("could not send progress report: %w\n", err)
 	}
 
-	return "", os.Remove(path)
+	return os.Remove(path)
 }
 
-func (a ReportProgressAction) sendProgressReport(path string) error {
-	bot, err := tgbotapi.NewBotAPI(a.TelegramToken)
+func sendProgressReport(path string, telegramChatId int64, telegramToken string) error {
+	bot, err := tgbotapi.NewBotAPI(telegramToken)
 	if err != nil {
 		return fmt.Errorf("could not initialize Telegram bot client: %w", err)
 	}
@@ -65,7 +64,7 @@ func (a ReportProgressAction) sendProgressReport(path string) error {
 		return fmt.Errorf("could not read progress report image '%s': %w", path, err)
 	}
 
-	_, err = bot.Send(tgbotapi.NewPhotoUpload(a.TelegramChatId, tgbotapi.FileBytes{
+	_, err = bot.Send(tgbotapi.NewPhotoUpload(telegramChatId, tgbotapi.FileBytes{
 		Name:  "picture",
 		Bytes: photoBytes,
 	}))

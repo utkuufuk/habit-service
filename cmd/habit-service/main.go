@@ -7,18 +7,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/utkuufuk/habit-service/internal/config"
-	"github.com/utkuufuk/habit-service/internal/habit"
 	"github.com/utkuufuk/habit-service/internal/logger"
 	"github.com/utkuufuk/habit-service/internal/service"
+	"github.com/utkuufuk/habit-service/internal/sheets"
 )
 
 var (
 	cfg    config.ServerConfig
-	client habit.Client
+	client sheets.Client
 )
 
 func init() {
@@ -29,7 +28,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	client, err = habit.GetClient(context.Background(), cfg.GoogleSheets)
+	client, err = sheets.GetClient(context.Background(), cfg.GoogleSheets)
 	if err != nil {
 		logger.Error("Could not create gsheets client for Habit Service: %v", err)
 		os.Exit(1)
@@ -48,10 +47,7 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if req.Method == http.MethodGet {
-		action := service.FetchHabitsAsTrelloCardsAction{
-			TimezoneLocation: cfg.TimezoneLocation,
-		}
-		cards, err := action.Run(req.Context(), client)
+		cards, err := service.FetchHabitCards(client, cfg.TimezoneLocation)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, fmt.Sprintf("could not fetch new cards: %v", err))
@@ -71,41 +67,17 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		var card struct {
-			Desc   string `json:"desc"`
-			Labels []struct {
-				Name string `json:"name"`
-			} `json:"labels"`
-		}
+		var card service.TrelloCard
+		cell := strings.Split(card.Desc, "\n")[0]
 		if err = json.Unmarshal(body, &card); err != nil {
 			logger.Warn("Invalid request body: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		cell := strings.Split(card.Desc, "\n")[0]
-		matched, err := regexp.MatchString(`[a-zA-Z]{3} 202\d![A-Z][1-9][0-9]?$|^100$`, cell)
-		if err != nil || matched == false {
-			logger.Error("Invalid cell name '%s' in card description: %v", cell, err)
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			return
-		}
-
-		symbol := "✔"
-		for _, c := range card.Labels {
-			if c.Name == "habit-skip" {
-				symbol = "–"
-				break
-			}
-			if c.Name == "habit-fail" {
-				symbol = "✘"
-				break
-			}
-		}
-
-		_, err = service.MarkHabitAction{Cell: cell, Symbol: symbol}.Run(req.Context(), client)
+		err = service.UpdateHabit(client, cfg.TimezoneLocation, cell, card.Labels)
 		if err != nil {
-			logger.Error("Could not mark habit at cell '%s' as %s: %v", cell, symbol, err)
+			logger.Error("Could not update habit at cell '%s': %v", cell, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

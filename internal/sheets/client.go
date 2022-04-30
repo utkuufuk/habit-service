@@ -1,4 +1,4 @@
-package habit
+package sheets
 
 import (
 	"context"
@@ -17,7 +17,12 @@ const (
 	tokenUrl    = "https://oauth2.googleapis.com/token"
 )
 
-func initService(ctx context.Context, cfg config.GoogleSheetsConfig) (service *sheets.Service, err error) {
+type Client struct {
+	spreadsheetId string
+	service       *sheets.SpreadsheetsValuesService
+}
+
+func GetClient(ctx context.Context, cfg config.GoogleSheetsConfig) (client Client, err error) {
 	auth := &oauth2.Config{
 		ClientID:     cfg.GoogleClientId,
 		ClientSecret: cfg.GoogleClientSecret,
@@ -35,10 +40,11 @@ func initService(ctx context.Context, cfg config.GoogleSheetsConfig) (service *s
 		RefreshToken: cfg.GoogleRefreshToken,
 		Expiry:       time.Now(),
 	}
+
+	service, err := sheets.New(auth.Client(ctx, token))
 	if err != nil {
-		return service, fmt.Errorf("could not get credentials for google spreadsheets: %w", err)
+		return client, fmt.Errorf("could not initialize gsheets service: %w", err)
 	}
 
-	client := auth.Client(ctx, token)
-	return sheets.New(client)
+	return Client{cfg.SpreadsheetId, service.Spreadsheets.Values}, nil
 }

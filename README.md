@@ -26,12 +26,6 @@ A new [Docker image](https://github.com/utkuufuk?tab=packages&repo_name=habit-se
         --name habit-service \
         ghcr.io/utkuufuk/habit-service/image:latest
 
-    # score update runner
-    docker run --rm \
-        --env-file </absolute/path/to/.env> \
-        ghcr.io/utkuufuk/habit-service/image:latest \
-        ./score-update
-
     # progress report runner
     docker run --rm \
         --env-file </absolute/path/to/.env> \

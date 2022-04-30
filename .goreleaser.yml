@@ -33,21 +33,6 @@ builds:
     - arm64
   goarm: [6, 7]
 
-- id: score-update
-  main: ./cmd/score-update
-  binary: score-update
-  env:
-  - CGO_ENABLED=0
-  goos:
-    - linux
-    - darwin
-    - windows
-  goarch:
-    - amd64
-    - arm
-    - arm64
-  goarm: [6, 7]
-
 archives:
 - id: habit-service-archive
   name_template: |-
@@ -60,7 +45,6 @@ archives:
   builds:
     - habit-service
     - progress-report
-    - score-update
   replacements:
     386: i386
     amd64: x86_64
