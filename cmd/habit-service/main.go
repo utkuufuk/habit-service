@@ -68,13 +68,13 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 		}
 
 		var card service.TrelloCard
-		cell := strings.Split(card.Desc, "\n")[0]
 		if err = json.Unmarshal(body, &card); err != nil {
 			logger.Warn("Invalid request body: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
+		cell := strings.Split(card.Desc, "\n")[0]
 		err = service.UpdateHabit(client, cfg.TimezoneLocation, cell, card.Labels)
 		if err != nil {
 			logger.Error("Could not update habit at cell '%s': %v", cell, err)
