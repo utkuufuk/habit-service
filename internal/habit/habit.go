@@ -140,7 +140,7 @@ func calculateScore(rows [][]interface{}, day int, col int) float64 {
 	nominator := 0
 	denominator := day
 	for row := dataRowIdx; row < day+dataRowIdx; row++ {
-		isToday := row == day+dataRowIdx-2
+		isToday := row == day+dataRowIdx-1
 
 		if len(rows[row]) < col+1 {
 			// if today's habit is not marked yet, don't take it into account
