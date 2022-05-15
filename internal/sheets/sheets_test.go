@@ -72,7 +72,7 @@ func TestGetRangeName(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			rng, err := GetRange(testSheetName, tc.start, tc.end)
+			rng, err := GetRangeName(testSheetName, tc.start, tc.end)
 			if same := (err == nil && tc.err == nil) || tc.err != nil && err != nil; !same {
 				t.Fatalf("want '%v', got '%v'", tc.err, err)
 			}
