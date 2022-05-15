@@ -133,20 +133,18 @@ func parseHabit(rows [][]interface{}, date time.Time, col int) (habit Habit, err
 	}
 
 	score := calculateScore(rows, day, col)
-
 	return Habit{cellName, state, score}, nil
 }
 
 func calculateScore(rows [][]interface{}, day int, col int) float64 {
-	// calculate habit score
 	nominator := 0
 	denominator := day
 	for row := dataRowIdx; row < day+dataRowIdx; row++ {
-		isLastRow := row == day+dataRowIdx-2
+		isToday := row == day+dataRowIdx-2
 
 		if len(rows[row]) < col+1 {
 			// if today's habit is not marked yet, don't take it into account
-			if isLastRow {
+			if isToday {
 				denominator--
 			}
 			continue
@@ -162,7 +160,7 @@ func calculateScore(rows [][]interface{}, day int, col int) float64 {
 		}
 
 		// if today's habit is not marked yet, don't take it into account
-		if val == "" && isLastRow {
+		if val == "" && isToday {
 			denominator--
 		}
 	}
