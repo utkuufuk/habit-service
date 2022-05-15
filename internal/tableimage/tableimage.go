@@ -1,7 +1,11 @@
 package tableimage
 
 import (
+	"fmt"
 	"image"
+	"image/jpeg"
+	"image/png"
+	"os"
 )
 
 // TD a table data container
@@ -17,54 +21,52 @@ type TR struct {
 }
 
 type TableImage struct {
-	width           int
-	height          int
-	th              TR
-	trs             []TR
-	backgroundColor string
-	fileType        string
-	filePath        string
-	img             *image.RGBA
+	BackgroundColor string
+	FileType        string
+	FilePath        string
+	Header          TR
+	Rows            []TR
+
+	width  int
+	height int
+	img    *image.RGBA
 }
 
 const (
-	rowSpace         = 26
-	tablePadding     = 20
-	letterPerPx      = 10
-	separatorPadding = 10
-	wrapWordsLen     = 12
-	columnSpace      = wrapWordsLen * letterPerPx
+	rowBottomPadding = 10
+	rowHeight        = 30
+	columnPadding    = 16
+	columnWidth      = 100
 	Png              = "png"
 	Jpeg             = "jpg"
 )
 
-// Init initialise the table image receiver
-func Init(backgroundColor string, fileType string, filePath string) TableImage {
-	ti := TableImage{
-		backgroundColor: backgroundColor,
-		fileType:        fileType,
-		filePath:        filePath,
+func Draw(t TableImage) {
+	// initialize private fields
+	t.width = len(t.Header.Tds) * columnWidth
+	t.height = (len(t.Rows)+2)*rowHeight - 2*rowBottomPadding
+	t.img = image.NewRGBA(image.Rect(0, 0, t.width, t.height))
+
+	t.drawMask()
+	t.drawHeader()
+	t.drawRows()
+	t.saveFile()
+}
+
+func (t *TableImage) saveFile() error {
+	f, err := os.Create(t.FilePath)
+	if err != nil {
+		return fmt.Errorf("could not create file: %w", err)
 	}
-	ti.setRgba()
-	return ti
-}
+	defer f.Close()
 
-// AddTH adds the table header
-func (ti *TableImage) AddTH(th TR) {
-	ti.th = th
-}
+	if t.FileType == Jpeg {
+		return jpeg.Encode(f, t.img, nil)
+	}
 
-// AddTRs add the table rows
-func (ti *TableImage) AddTRs(trs []TR) {
-	ti.trs = trs
-}
+	if t.FileType == Png {
+		return png.Encode(f, t.img)
+	}
 
-// Save saves the table image
-func (ti *TableImage) Save() {
-	ti.calculateHeight()
-	ti.calculateWidth()
-	ti.setRgba()
-	ti.drawTH()
-	ti.drawTR()
-	ti.saveFile()
+	return fmt.Errorf("invalid image format: '%s'", t.FileType)
 }

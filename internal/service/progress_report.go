@@ -14,6 +14,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+type table struct {
+	rows []tableimage.TR
+}
+
 func ReportProgress(
 	client sheets.Client,
 	loc *time.Location,
@@ -34,7 +38,7 @@ func ReportProgress(
 		return fmt.Errorf("could not fetch habits from last month: %w\n", err)
 	}
 
-	table := newTable()
+	table := &table{make([]tableimage.TR, 0)}
 	for name, habit := range thisMonthHabits {
 		if slices.Contains(skipList, name) {
 			continue
@@ -71,43 +75,35 @@ func sendProgressReport(path string, telegramChatId int64, telegramToken string)
 	return err
 }
 
-type table struct {
-	rows []tableimage.TR
-}
-
-func newTable() *table {
-	return &table{make([]tableimage.TR, 0)}
-}
-
 func (t *table) save(path string) {
-	ti := tableimage.Init("#fff", tableimage.Png, path)
-
-	ti.AddTH(
-		tableimage.TR{
-			BorderColor: "#000",
-			Tds: []tableimage.TD{
-				{
-					Color: "#000",
-					Text:  "Habit",
-				},
-				{
-					Color: "#000",
-					Text:  "Last Month",
-				},
-				{
-					Color: "#000",
-					Text:  "This Month",
-				},
-				{
-					Color: "#000",
-					Text:  "Delta",
-				},
+	header := tableimage.TR{
+		BorderColor: "#000",
+		Tds: []tableimage.TD{
+			{
+				Color: "#000",
+				Text:  "Habit",
+			},
+			{
+				Color: "#000",
+				Text:  "Last Month",
+			},
+			{
+				Color: "#000",
+				Text:  "This Month",
+			},
+			{
+				Color: "#000",
+				Text:  "Delta",
 			},
 		},
-	)
-
-	ti.AddTRs(t.rows)
-	ti.Save()
+	}
+	tableimage.Draw(tableimage.TableImage{
+		BackgroundColor: "#fff",
+		FileType:        tableimage.Png,
+		FilePath:        path,
+		Header:          header,
+		Rows:            t.rows,
+	})
 }
 
 func (t *table) addRow(name string, last, current float64) {
