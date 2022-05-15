@@ -3,7 +3,6 @@ package tableimage
 import (
 	"fmt"
 	"image"
-	"image/jpeg"
 	"image/png"
 	"os"
 )
@@ -22,7 +21,6 @@ type TR struct {
 
 type TableImage struct {
 	BackgroundColor string
-	FileType        string
 	FilePath        string
 	Header          TR
 	Rows            []TR
@@ -37,8 +35,6 @@ const (
 	rowHeight        = 30
 	columnPadding    = 16
 	columnWidth      = 100
-	Png              = "png"
-	Jpeg             = "jpg"
 )
 
 func Draw(t TableImage) {
@@ -60,13 +56,5 @@ func (t *TableImage) saveFile() error {
 	}
 	defer f.Close()
 
-	if t.FileType == Jpeg {
-		return jpeg.Encode(f, t.img, nil)
-	}
-
-	if t.FileType == Png {
-		return png.Encode(f, t.img)
-	}
-
-	return fmt.Errorf("invalid image format: '%s'", t.FileType)
+	return png.Encode(f, t.img)
 }

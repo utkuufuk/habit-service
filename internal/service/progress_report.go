@@ -99,7 +99,6 @@ func (t *table) save(path string) {
 	}
 	tableimage.Draw(tableimage.TableImage{
 		BackgroundColor: "#fff",
-		FileType:        tableimage.Png,
 		FilePath:        path,
 		Header:          header,
 		Rows:            t.rows,
