@@ -21,14 +21,14 @@ const (
 )
 
 type Habit struct {
-	Cell  sheets.Range
-	State string
-	Score float64
+	CellName sheets.CellName
+	State    string
+	Score    float64
 }
 
 // FetchAll retrieves the state of habits from the spreadsheet as of the selected date
 func FetchAll(client sheets.Client, date time.Time) (map[string]Habit, error) {
-	rng, err := sheets.GetRange(
+	rng, err := sheets.GetRangeName(
 		getSheetName(date),
 		sheets.Cell{Col: "A", Row: 1},
 		sheets.Cell{Col: "Z", Row: date.Day() + dataRowIdx},
@@ -42,7 +42,7 @@ func FetchAll(client sheets.Client, date time.Time) (map[string]Habit, error) {
 		return nil, fmt.Errorf("could not read cells: %w", err)
 	}
 
-	return parseHabitMap(rows, date)
+	return createHabitMap(rows, date)
 }
 
 // Mark marks the habit with the given cell as done/failed/skipped
@@ -67,12 +67,12 @@ func Mark(client sheets.Client, cell, symbol string) error {
 func WriteScores(client sheets.Client, date time.Time, habits []Habit) error {
 	scores := make([]float64, len(habits))
 	for _, habit := range habits {
-		idx := habit.Cell.GetStartColumnIndex()
+		idx := habit.CellName.GetStartColumnIndex()
 		scores[idx] = habit.Score
 	}
 
 	row := scoreRowIdx + 1
-	scoreRowRange, err := sheets.GetRange(
+	scoreRowRange, err := sheets.GetRangeName(
 		getSheetName(date),
 		sheets.Cell{Col: string(rune(int('A') + dataColumnIdx)), Row: row},
 		sheets.Cell{Col: string(rune(int('A') + len(habits))), Row: row},
@@ -96,52 +96,79 @@ func getSheetName(date time.Time) string {
 	return fmt.Sprintf("%s %d", month, year)
 }
 
-// parseHabitMap parses a map of habits from spreadsheet row data for the given date
-func parseHabitMap(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
+// createHabitMap creates a map of habits from spreadsheet data for the given date
+func createHabitMap(rows [][]interface{}, date time.Time) (map[string]Habit, error) {
 	habits := make(map[string]Habit)
 	for col := dataColumnIdx; col < len(rows[0]); col++ {
-		// evaluate the habit's cell name the selected date
-		c := sheets.Cell{Col: string(rune('A' + col)), Row: date.Day() + dataRowIdx}
-		cell, err := sheets.GetRange(getSheetName(date), c, c)
-		if err != nil {
-			return nil, err
-		}
-
-		// handle cases where the last N columns are blank which reduces the slice length by N
-		state := ""
-		if col < len(rows[date.Day()+dataRowIdx-1]) {
-			state = fmt.Sprintf("%v", rows[date.Day()+dataRowIdx-1][col])
-		}
-
-		// read habit name
 		name := fmt.Sprintf("%v", rows[nameRowIdx][col])
 		if name == "" {
 			return nil, fmt.Errorf("habit name cannot be blank")
 		}
 
-		// calculate habit score
-		nom := 0
-		denom := date.Day()
-		for row := dataRowIdx; row < date.Day()+dataRowIdx; row++ {
-			if len(rows[row]) < col+1 {
-				continue
-			}
-
-			val := rows[row][col]
-			if val == SymbolDone {
-				nom++
-			}
-
-			if val == SymbolSkip {
-				denom--
-			}
-		}
-		score := (float64(nom) / float64(denom))
-		if math.IsNaN(score) {
-			score = 0
+		habit, err := parseHabit(rows, date, col)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse habit: %w", err)
 		}
 
-		habits[name] = Habit{cell, state, score}
+		habits[name] = habit
 	}
 	return habits, nil
+}
+
+func parseHabit(rows [][]interface{}, date time.Time, col int) (habit Habit, err error) {
+	day := date.Day()
+	cell := sheets.Cell{
+		Col: string(rune('A' + col)),
+		Row: day + dataRowIdx,
+	}
+	cellName, err := sheets.GetCellName(getSheetName(date), cell)
+	if err != nil {
+		return habit, fmt.Errorf("could not get cell name: %w", err)
+	}
+
+	// fall back to blank state if the last N columns are blank which reduces the slice length by N
+	state := ""
+	if col < len(rows[cell.Row-1]) {
+		state = fmt.Sprintf("%v", rows[cell.Row-1][col])
+	}
+
+	score := calculateScore(rows, day, col)
+	return Habit{cellName, state, score}, nil
+}
+
+func calculateScore(rows [][]interface{}, day int, col int) float64 {
+	nominator := 0
+	denominator := day
+	for row := dataRowIdx; row < day+dataRowIdx; row++ {
+		isToday := row == day+dataRowIdx-2
+
+		if len(rows[row]) < col+1 {
+			// if today's habit is not marked yet, don't take it into account
+			if isToday {
+				denominator--
+			}
+			continue
+		}
+
+		val := rows[row][col]
+		if val == SymbolDone {
+			nominator++
+		}
+
+		if val == SymbolSkip {
+			denominator--
+		}
+
+		// if today's habit is not marked yet, don't take it into account
+		if val == "" && isToday {
+			denominator--
+		}
+	}
+
+	score := (float64(nominator) / float64(denominator))
+	if math.IsNaN(score) {
+		score = 0
+	}
+
+	return score
 }

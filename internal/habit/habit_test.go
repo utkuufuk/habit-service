@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestParseHabitMap(t *testing.T) {
+func TestCreateHabitMap(t *testing.T) {
 	any := "."
 
 	tt := []struct {
@@ -101,7 +101,7 @@ func TestParseHabitMap(t *testing.T) {
 				}
 			}
 
-			habits, err := parseHabitMap(data, date)
+			habits, err := createHabitMap(data, date)
 			if same := (err == nil && tc.err == nil) || tc.err != nil && err != nil; !same {
 				t.Fatalf("want '%v', got '%v'", tc.err, err)
 			}

@@ -80,7 +80,7 @@ func toTrelloCards(habits map[string]habit.Habit, now time.Time) (cards []trello
 		title := fmt.Sprintf("%v (%d)", name, now.Day())
 
 		due := time.Date(now.Year(), now.Month(), now.Day(), dueHour, 0, 0, 0, now.Location())
-		c, err := trello.NewCard(title, string(habit.Cell), &due)
+		c, err := trello.NewCard(title, string(habit.CellName), &due)
 		if err != nil {
 			return nil, fmt.Errorf("could not create habit card: %w", err)
 		}

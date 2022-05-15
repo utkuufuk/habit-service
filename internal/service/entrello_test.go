@@ -9,7 +9,7 @@ import (
 )
 
 func TestToTrelloCards(t *testing.T) {
-	testCell := sheets.Range("Jun 2020!C3")
+	testCellName := sheets.CellName("Jun 2020!C3")
 
 	tt := []struct {
 		name     string
@@ -20,11 +20,11 @@ func TestToTrelloCards(t *testing.T) {
 		{
 			name: "marked habits",
 			habits: map[string]habit.Habit{
-				"a": {Cell: testCell, State: "✔", Score: 0},
-				"b": {Cell: testCell, State: "x", Score: 0},
-				"c": {Cell: testCell, State: "✘", Score: 0},
-				"d": {Cell: testCell, State: "–", Score: 0},
-				"e": {Cell: testCell, State: "-", Score: 0},
+				"a": {CellName: testCellName, State: "✔", Score: 0},
+				"b": {CellName: testCellName, State: "x", Score: 0},
+				"c": {CellName: testCellName, State: "✘", Score: 0},
+				"d": {CellName: testCellName, State: "–", Score: 0},
+				"e": {CellName: testCellName, State: "-", Score: 0},
 			},
 			numCards: 0,
 			err:      nil,
@@ -32,13 +32,13 @@ func TestToTrelloCards(t *testing.T) {
 		{
 			name: "some marked some unmarked habits",
 			habits: map[string]habit.Habit{
-				"a": {Cell: testCell, State: "✔", Score: 0},
-				"b": {Cell: testCell, State: "x", Score: 0},
-				"c": {Cell: testCell, State: "✘", Score: 0},
-				"d": {Cell: testCell, State: "–", Score: 0},
-				"e": {Cell: testCell, State: "-", Score: 0},
-				"f": {Cell: testCell, State: "", Score: 0},
-				"g": {Cell: testCell, State: "", Score: 0},
+				"a": {CellName: testCellName, State: "✔", Score: 0},
+				"b": {CellName: testCellName, State: "x", Score: 0},
+				"c": {CellName: testCellName, State: "✘", Score: 0},
+				"d": {CellName: testCellName, State: "–", Score: 0},
+				"e": {CellName: testCellName, State: "-", Score: 0},
+				"f": {CellName: testCellName, State: "", Score: 0},
+				"g": {CellName: testCellName, State: "", Score: 0},
 			},
 			numCards: 2,
 			err:      nil,
