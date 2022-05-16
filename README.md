@@ -26,7 +26,7 @@ The sheet format must follow this specific convention:
 
 Here's an example:
 
-![image](./sheet.example.png)
+![image](./example.png)
 
 _Conditional formatting of the colors can be adjusted from Google Sheets UI._
 
