@@ -21,8 +21,7 @@ May 2024
 The sheet format must follow this specific convention:
 - Dates go to the first column, starting from `A3`. (Leave `A1` and `A2` blank.)
 - Habit names go to the first row, starting from `B1`.
-- Completion percentages to the second row, starting from `B2`.
-- There must be a row for each day in month (starting from row 3) and a column for each habit (starting from column B).
+- Scores go to the second row, starting from `B2`.
 
 Here's an example:
 
