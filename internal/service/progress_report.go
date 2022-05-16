@@ -19,11 +19,7 @@ type table struct {
 	rows []tableimage.TR
 }
 
-func ReportProgress(
-	client sheets.Client,
-	loc *time.Location,
-	cfg config.ProgressReportConfig,
-) error {
+func ReportProgress(client sheets.Client, loc *time.Location, cfg config.ProgressReportConfig) error {
 	now := time.Now().In(loc)
 	thisMonthHabits, err := habit.FetchAll(client, now)
 	if err != nil {

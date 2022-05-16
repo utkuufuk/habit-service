@@ -105,6 +105,7 @@ func handleProgressReportRequest(w http.ResponseWriter, req *http.Request) {
 	if err := service.ReportProgress(client, cfg.TimezoneLocation, cfg.ProgressReport); err != nil {
 		logger.Error("Could not run send progress report: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
