@@ -6,17 +6,11 @@ Habit service for [entrello](https://github.com/utkuufuk/entrello), built on top
 ## Spreadsheet Format
 You must have a dedicated sheet for the current month in your spreadsheet.
 
-_Do not delete sheets for old months as they may be used by the progress report feature._
+_Do not delete sheets for past months as they may be used by the progress report feature._
 
-Sheet names must follow this specific convention:
-```sh
-# first 3 letters of the month (first letter capitalized) followed by 4-digit year
+Sheet names must follow a certain convention. Some examples:
 
-# examples:
-Sep 2022
-Jun 2023
-May 2024
-```
+![Example Sheet Names](./example1.png)
 
 The sheet format must follow this specific convention:
 - Dates go to the first column, starting from `A3`. (Leave `A1` and `A2` blank.)
@@ -25,7 +19,7 @@ The sheet format must follow this specific convention:
 
 Here's an example:
 
-![image](./example.png)
+![Example Sheet](./example2.png)
 
 _Conditional formatting of the colors can be adjusted from Google Sheets UI._
 

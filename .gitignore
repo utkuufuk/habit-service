@@ -1,4 +1,4 @@
 .env
 *.png
-!example.png
+!example*.png
 /.vscode
