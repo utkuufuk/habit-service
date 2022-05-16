@@ -31,6 +31,7 @@ func main() {
 		sendPorgressReport(client, loc)
 	default:
 		logger.Error("Uncrecognized command: %s", os.Args[1])
+		os.Exit(1)
 	}
 }
 

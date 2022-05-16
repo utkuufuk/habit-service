@@ -88,7 +88,6 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusMethodNotAllowed)
-	return
 }
 
 func handleProgressReportRequest(w http.ResponseWriter, req *http.Request) {
@@ -109,5 +108,4 @@ func handleProgressReportRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
