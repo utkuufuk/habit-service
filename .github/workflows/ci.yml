@@ -35,7 +35,7 @@ jobs:
       run: go build ./cmd/cli
 
     - name: Run tests
-      run: go test ./...
+      run: go test -covermode=count -coverprofile=profile.cov ./...
 
     - name: Send coverage
       env:
