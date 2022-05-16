@@ -1,7 +1,34 @@
 # habit-service
 [![CI](https://github.com/utkuufuk/habit-service/actions/workflows/ci.yml/badge.svg)](https://github.com/utkuufuk/habit-service/actions/workflows/ci.yml)
 
-Habit service for [entrello](https://github.com/utkuufuk/entrello)
+Habit service for [entrello](https://github.com/utkuufuk/entrello), built on top of Google Sheets.
+
+## Spreadsheet Format
+You must have a dedicated sheet for the current month in your spreadsheet.
+
+_Do not delete sheets for old months as they may be used by the progress report feature._
+
+Sheet names must follow this specific convention:
+```sh
+# first 3 letters of the month (first letter capitalized) followed by 4-digit year
+
+# examples:
+Sep 2022
+Jun 2023
+May 2024
+```
+
+The sheet format must follow this specific convention:
+- Dates go to the first column, starting from `A3`. (Leave `A1` and `A2` blank.)
+- Habit names go to the first row, starting from `B1`.
+- Completion percentages to the second row, starting from `B2`.
+- There must be a row for each day in month (starting from row 3) and a column for each habit (starting from column B).
+
+Here's an example:
+
+![image](./sheet.example.png)
+
+_Conditional formatting of the colors can be adjusted from Google Sheets UI._
 
 ## Usage
 Start the server:
