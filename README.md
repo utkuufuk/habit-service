@@ -4,7 +4,7 @@
 Habit service for [entrello](https://github.com/utkuufuk/entrello)
 
 ## Usage
-Starting the server:
+Start the server:
 ```sh
 go run ./cmd/server
 ```
@@ -27,7 +27,7 @@ Mark a habit as done/skipped/failed.
 #### `POST <SERVER_URL>/progress-report`
 Generate and send a progress report as a Telegram message.
 
-The `POST` request body may be empty, but you must set the `X-API-Key` header accordingly if you set the `SECRET` environment variable.
+This endpoint will **not** be called by [entrello](https://github.com/utkuufuk/entrello). It's meant to be called by a separate scheduled job, or manually on demand. You don't have to put anything in the `POST` request body, but if you set the `SECRET` environment variable, you must also set the `X-API-Key` header accordingly.
 
 Alternatively, you can run following command to generate and send a progress report:
 ```sh
