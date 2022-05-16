@@ -75,5 +75,8 @@ A new [Docker image](https://github.com/utkuufuk?tab=packages&repo_name=habit-se
         ghcr.io/utkuufuk/habit-service/image:latest
 
     # CLI
-    docker run --rm --env-file </abs/path/to/.env> ghcr.io/utkuufuk/habit-service/image:latest ./cli
+    docker run --rm \
+        --env-file </abs/path/to/.env> \
+        ghcr.io/utkuufuk/habit-service/image:latest \
+        ./cli
     ```
