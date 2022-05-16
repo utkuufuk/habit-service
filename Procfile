@@ -1,1 +1,1 @@
-web: bin/habit-service
+web: bin/server

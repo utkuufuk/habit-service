@@ -19,19 +19,52 @@ type GoogleSheetsConfig struct {
 	SpreadsheetId      string
 }
 
+type ProgressReportConfig struct {
+	SkipList       []string
+	TelegramChatId int64
+	TelegramToken  string
+}
+
 type ServerConfig struct {
 	GoogleSheets     GoogleSheetsConfig
+	ProgressReport   ProgressReportConfig
 	TimezoneLocation *time.Location
 	Port             int
 	Secret           string
 }
 
-type ProgressReportConfig struct {
-	GoogleSheets     GoogleSheetsConfig
-	TimezoneLocation *time.Location
-	SkipList         []string
-	TelegramChatId   int64
-	TelegramToken    string
+func ParseServerConfig() (cfg ServerConfig, err error) {
+	loc, common := ParseCommonConfig()
+	progressReport, err := ParseProgressReportConfig()
+	if err != nil {
+		return cfg, fmt.Errorf("could not parse progress report config: %v", err)
+	}
+
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+	if err != nil {
+		return cfg, fmt.Errorf("PORT not set")
+	}
+
+	return ServerConfig{
+		common,
+		progressReport,
+		loc,
+		port,
+		os.Getenv("SECRET"),
+	}, nil
+}
+
+func ParseProgressReportConfig() (cfg ProgressReportConfig, err error) {
+	chatId, err := strconv.ParseInt(os.Getenv("TELEGRAM_CHAT_ID"), 10, 64)
+	if err != nil {
+		return cfg, fmt.Errorf("Invalid Telegram Chat ID")
+	}
+
+	return ProgressReportConfig{
+		strings.Split(os.Getenv("PROGRESS_REPORT_SKIP_LIST"), ","),
+		chatId,
+		os.Getenv("TELEGRAM_TOKEN"),
+	}, nil
 }
 
 func ParseCommonConfig() (loc *time.Location, cfg GoogleSheetsConfig) {
@@ -54,37 +87,4 @@ func ParseCommonConfig() (loc *time.Location, cfg GoogleSheetsConfig) {
 	}
 
 	return loc, cfg
-}
-
-func ParseServerConfig() (cfg ServerConfig, err error) {
-	loc, common := ParseCommonConfig()
-
-	port, err := strconv.Atoi(os.Getenv("PORT"))
-	if err != nil {
-		return cfg, fmt.Errorf("PORT not set")
-	}
-
-	return ServerConfig{
-		common,
-		loc,
-		port,
-		os.Getenv("SECRET"),
-	}, nil
-}
-
-func ParseProgressReportConfig() (cfg ProgressReportConfig, err error) {
-	loc, common := ParseCommonConfig()
-
-	chatId, err := strconv.ParseInt(os.Getenv("TELEGRAM_CHAT_ID"), 10, 64)
-	if err != nil {
-		return cfg, fmt.Errorf("Invalid Telegram Chat ID")
-	}
-
-	return ProgressReportConfig{
-		common,
-		loc,
-		strings.Split(os.Getenv("PROGRESS_REPORT_SKIP_LIST"), ","),
-		chatId,
-		os.Getenv("TELEGRAM_TOKEN"),
-	}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/utkuufuk/habit-service/internal/config"
 	"github.com/utkuufuk/habit-service/internal/habit"
 	"github.com/utkuufuk/habit-service/internal/sheets"
 	"github.com/utkuufuk/habit-service/internal/tableimage"
@@ -18,13 +19,7 @@ type table struct {
 	rows []tableimage.TR
 }
 
-func ReportProgress(
-	client sheets.Client,
-	loc *time.Location,
-	skipList []string,
-	telegramChatId int64,
-	telegramToken string,
-) error {
+func ReportProgress(client sheets.Client, loc *time.Location, cfg config.ProgressReportConfig) error {
 	now := time.Now().In(loc)
 	thisMonthHabits, err := habit.FetchAll(client, now)
 	if err != nil {
@@ -40,7 +35,7 @@ func ReportProgress(
 
 	table := &table{make([]tableimage.TR, 0)}
 	for name, habit := range thisMonthHabits {
-		if slices.Contains(skipList, name) {
+		if slices.Contains(cfg.SkipList, name) {
 			continue
 		}
 
@@ -49,7 +44,7 @@ func ReportProgress(
 
 	path := fmt.Sprintf("./progress-report-%s.png", now.Format("2006-01-02T15:04:05"))
 	table.save(path)
-	err = sendProgressReport(path, telegramChatId, telegramToken)
+	err = sendProgressReport(path, cfg.TelegramChatId, cfg.TelegramToken)
 	if err != nil {
 		return fmt.Errorf("could not send progress report: %w\n", err)
 	}

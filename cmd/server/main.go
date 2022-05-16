@@ -37,6 +37,7 @@ func init() {
 
 func main() {
 	http.HandleFunc("/entrello", handleEntrelloRequest)
+	http.HandleFunc("/progress-report", handleProgressReportRequest)
 	http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil)
 }
 
@@ -87,5 +88,24 @@ func handleEntrelloRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusMethodNotAllowed)
-	return
+}
+
+func handleProgressReportRequest(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if cfg.Secret != "" && req.Header.Get("X-Api-Key") != cfg.Secret {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if err := service.ReportProgress(client, cfg.TimezoneLocation, cfg.ProgressReport); err != nil {
+		logger.Error("Could not run send progress report: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
