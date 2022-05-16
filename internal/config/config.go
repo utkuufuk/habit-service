@@ -20,11 +20,9 @@ type GoogleSheetsConfig struct {
 }
 
 type ProgressReportConfig struct {
-	GoogleSheets     GoogleSheetsConfig
-	TimezoneLocation *time.Location
-	SkipList         []string
-	TelegramChatId   int64
-	TelegramToken    string
+	SkipList       []string
+	TelegramChatId int64
+	TelegramToken  string
 }
 
 type ServerConfig struct {
@@ -57,16 +55,12 @@ func ParseServerConfig() (cfg ServerConfig, err error) {
 }
 
 func ParseProgressReportConfig() (cfg ProgressReportConfig, err error) {
-	loc, common := ParseCommonConfig()
-
 	chatId, err := strconv.ParseInt(os.Getenv("TELEGRAM_CHAT_ID"), 10, 64)
 	if err != nil {
 		return cfg, fmt.Errorf("Invalid Telegram Chat ID")
 	}
 
 	return ProgressReportConfig{
-		common,
-		loc,
 		strings.Split(os.Getenv("PROGRESS_REPORT_SKIP_LIST"), ","),
 		chatId,
 		os.Getenv("TELEGRAM_TOKEN"),

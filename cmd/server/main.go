@@ -102,13 +102,7 @@ func handleProgressReportRequest(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := service.ReportProgress(
-		client,
-		cfg.TimezoneLocation,
-		cfg.ProgressReport.SkipList,
-		cfg.ProgressReport.TelegramChatId,
-		cfg.ProgressReport.TelegramToken,
-	); err != nil {
+	if err := service.ReportProgress(client, cfg.TimezoneLocation, cfg.ProgressReport); err != nil {
 		logger.Error("Could not run send progress report: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}

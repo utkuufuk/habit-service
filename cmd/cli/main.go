@@ -28,7 +28,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "progress-report":
-		sendPorgressReport(client)
+		sendPorgressReport(client, loc)
 	default:
 		logger.Error("Uncrecognized command: %s", os.Args[1])
 	}
@@ -45,20 +45,14 @@ func displayCards(client sheets.Client, loc *time.Location) {
 	}
 }
 
-func sendPorgressReport(client sheets.Client) {
+func sendPorgressReport(client sheets.Client, loc *time.Location) {
 	cfg, err := config.ParseProgressReportConfig()
 	if err != nil {
-		logger.Error("Failed to parse progress report config: %v", err)
+		logger.Error("Could not parse progress report config: %v", err)
 		os.Exit(1)
 	}
 
-	if err = service.ReportProgress(
-		client,
-		cfg.TimezoneLocation,
-		cfg.SkipList,
-		cfg.TelegramChatId,
-		cfg.TelegramToken,
-	); err != nil {
+	if err = service.ReportProgress(client, loc, cfg); err != nil {
 		logger.Error("Could not run send progress report: %v", err)
 	}
 }
