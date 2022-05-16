@@ -1,5 +1,7 @@
 # habit-service
 [![CI](https://github.com/utkuufuk/habit-service/actions/workflows/ci.yml/badge.svg)](https://github.com/utkuufuk/habit-service/actions/workflows/ci.yml)
+![Latest Release](https://img.shields.io/github/release/utkuufuk/habit-service.svg)
+[![Coverage Status](https://coveralls.io/repos/github/utkuufuk/habit-service/badge.svg)](https://coveralls.io/github/utkuufuk/habit-service)
 
 Habit service for [entrello](https://github.com/utkuufuk/entrello), built on top of Google Sheets.
 
