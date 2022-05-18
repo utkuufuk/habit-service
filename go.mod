@@ -7,6 +7,7 @@ require (
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/google/go-cmp v0.5.8
 	github.com/joho/godotenv v1.4.0
+	github.com/utkuufuk/entrello v1.1.2
 	golang.org/x/exp v0.0.0-20220428152302-39d4317da171
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
@@ -21,7 +22,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
-	github.com/utkuufuk/entrello v1.1.2
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/sys v0.0.0-20220429233432-b5fbb4746d32 // indirect
